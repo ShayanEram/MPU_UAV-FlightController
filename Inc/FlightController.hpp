@@ -1,47 +1,51 @@
-/**
- * @file FlightController.hpp
- * @brief Header file for the FlightController class.
- * The brain of the aircraft, responsible for stabilization, navigation, and autonomous flight.
- */
-
-#ifndef FLIGHTCONTROLLER_HPP
-#define FLIGHTCONTROLLER_HPP
-
-#include <thread>
-#include <atomic>
-#include <iostream>
-
+#pragma once
 #include "InterData.hpp"
+#include <functional>
+#include <atomic>
+
+namespace uav {
 
 class FlightController {
 public:
-    explicit FlightController(
-        MessageQueue<BatteryData>& batteryQueue,
-        SharedResource<MotorData>& motorData,
-        Observer<PayloadData>& payloadObserver,
-        SharedResource<RemoteData>& remoteData,
-        MessageQueue<SensorData>& sensorQueue);
+    struct Config {
+        // tuning parameters, control loop frequency, failsafe thresholds
+        float kpRoll{1.0f}, kiRoll{0.0f}, kdRoll{0.0f};
+        float kpPitch{1.0f}, kiPitch{0.0f}, kdPitch{0.0f};
+        float kpYaw{1.0f}, kiYaw{0.0f}, kdYaw{0.0f};
+        uint32_t loopHz{200};
+    };
+
+    explicit FlightController(const Config& cfg);
     ~FlightController();
 
+    // lifecycle
+    bool init();
     void start();
     void stop();
 
-protected:
-    void onPayloadDataUpdated(const PayloadData& payloadData);
-    PayloadData _payloadCallbackData = {};
+    // input sources (called by higher-level orchestrator or callbacks)
+    void onSensorUpdate(const SensorData& s);
+    void onBatteryUpdate(const BatteryData& b);
+    void onRemoteUpdate(const RemoteData& r);
 
-    static constexpr int FLIGHT_CONTROLLER_UPDATE_RATE_MS = 100; // Update rate in milliseconds
+    // output sink (set by orchestrator)
+    void setMotorOutputCallback(MotorCallback cb);
+
+    // request current motor outputs
+    MotorData getMotorData() const;
 
 private:
-    void runLoop();
-    std::thread moduleThread;
-    std::atomic<bool> running;
+    void controlLoopIteration();
+    Config _cfg;
+    std::atomic<bool> _running{false};
 
-    MessageQueue<BatteryData>& _batteryQueue;
-    SharedResource<MotorData>& _motorData;
-    Observer<PayloadData>& _payloadObserver;
-    SharedResource<RemoteData>& _remoteData;
-    MessageQueue<SensorData>& _sensorQueue;
+    // internal state
+    SensorData _lastSensor;
+    BatteryData _lastBattery;
+    RemoteData _lastRemote;
+    MotorData _lastMotor;
+
+    MotorCallback _motorCb;
 };
 
-#endif // FLIGHTCONTROLLER_HPP
+} // namespace uav

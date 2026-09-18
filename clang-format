@@ -1,0 +1,68 @@
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Latest
+
+# Indentation & spacing
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120   # More room for lambdas, fluent builders, async chains
+
+# Braces — predictable for state machines & protocol handlers
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Includes — stable, deterministic
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: '^<.*>'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+
+# Alignment — important for buffer ops & struct layouts
+AlignAfterOpenBracket: Align
+AlignOperands: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+
+# Pointers & references — left-aligned is clearer in APIs
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Namespaces — networking libs often have deep hierarchies
+NamespaceIndentation: All
+FixNamespaceComments: true
+
+# Constructor / inheritance formatting — common in reactors & handlers
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+
+# Spacing — clarity for control-heavy code
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: true
+
+# Comments — keep docs readable
+ReflowComments: true
+
+# Preprocessor — networking libs often use feature flags
+IndentPPDirectives: AfterHash
+
+# Wrapping penalties — tuned for async call chains
+PenaltyBreakBeforeFirstCallParameter: 12
+
+# Brace wrapping — predictable for large switch() state machines
+BraceWrapping:
+  AfterClass: true
+  AfterStruct: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  BeforeElse: true
+  BeforeCatch: true

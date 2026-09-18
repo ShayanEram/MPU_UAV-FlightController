@@ -1,59 +1,37 @@
-/**
- * @file RemoteController.hpp
- * @brief Header file for the RemoteController class.
- * Remote control via radio signals, Wi-Fi, or satellite links.
- */
-
-#ifndef REMOTE_CONTROLLER_HPP
-#define REMOTE_CONTROLLER_HPP
-
-#include <thread>
-#include <atomic>
-#include <iostream>
-
-#include <cstring>
-#include <iostream>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
+#pragma once
 #include "InterData.hpp"
+#include "HardwareAbstractions.hpp"
+#include <memory>
+#include <atomic>
+#include <thread>
+
+namespace uav {
 
 class RemoteController {
 public:
-    explicit RemoteController(SharedResource<RemoteData>& _remoteData);
+    struct Config {
+        std::shared_ptr<hw::RcInput> rcInput; // PPM/SBUS adapter
+        uint32_t loopHz{50};
+    };
+
+    explicit RemoteController(const Config& cfg);
     ~RemoteController();
+
+    bool init();
     void start();
     void stop();
 
-protected:
-    struct Command {
-        float throttle;
-        float yaw;
-        float pitch;
-        float roll;
-        bool releasePayload;
-    };
-
-    void startConnection();
-    void stopConnection();
-    Command processCommand(const std::string& command);
-
-    static constexpr int BUFFER_SIZE = 1024;
-    static constexpr int REMOTE_INTERVAL_CHECK_MS = 10;
-
-    static constexpr const char* SOCKET_PATH = "/tmp/remote_controller_socket";
-    bool _isConnected;
-    int  _serverSocket, _clientSocket;
-    bool _statusToSend;
-    sockaddr_in _serverAddress;
+    void setRemoteCallback(RemoteCallback cb);
+    bool readOnce(RemoteData& out);
 
 private:
     void runLoop();
-    std::thread moduleThread;
-    std::atomic<bool> running;
+    RemoteData mapChannelsToRemote(const std::vector<float>& channels);
 
-    SharedResource<RemoteData>& _remoteData;
+    Config _cfg;
+    std::atomic<bool> _running{false};
+    std::thread _thread;
+    RemoteCallback _callback;
 };
 
-#endif // REMOTE_CONTROLLER_HPP
+} // namespace uav

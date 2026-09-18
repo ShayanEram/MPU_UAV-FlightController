@@ -1,118 +1,79 @@
 #include "RemoteController.hpp"
-#include <string>
+#include <chrono>
+#include <iostream>
 
-RemoteController::RemoteController(SharedResource<RemoteData>& remoteData) : _remoteData(remoteData), running(false) {
-    _isConnected = false;
-}
+using namespace uav;
+using namespace std::chrono;
+
+RemoteController::RemoteController(const Config& cfg) : _cfg(cfg) {}
+
 RemoteController::~RemoteController() {
     stop();
 }
-//------------------------------------------------------------------------------------
+
+bool RemoteController::init() {
+    if (!_cfg.rcInput) {
+        std::cerr << "[RemoteController] Warning: no RC adapter injected; using simulated RC\n";
+    }
+    return true;
+}
+
 void RemoteController::start() {
-    if (!running.load()) {
-        running.store(true);
-        moduleThread = std::thread(&RemoteController::runLoop, this);
-    }
+    if (_running.exchange(true)) return;
+    _thread = std::thread(&RemoteController::runLoop, this);
 }
+
 void RemoteController::stop() {
-    if (running.load()) {
-        running.store(false);
-        if (moduleThread.joinable()) {
-            moduleThread.join();
-        }
-    }
+    if (!_running.exchange(false)) return;
+    if (_thread.joinable()) _thread.join();
 }
-//------------------------------------------------------------------------------------
+
+void RemoteController::setRemoteCallback(RemoteCallback cb) {
+    _callback = std::move(cb);
+}
+
+bool RemoteController::readOnce(RemoteData& out) {
+    if (_cfg.rcInput) {
+        std::vector<float> channels;
+        if (!_cfg.rcInput->readChannels(channels)) return false;
+        out = mapChannelsToRemote(channels);
+    } else {
+        // simulated neutral RC
+        out.throttle = 0.0f;
+        out.roll = 0.0f;
+        out.pitch = 0.0f;
+        out.yaw = 0.0f;
+        out.modeSwitch = false;
+        out.killSwitch = false;
+        out.isConnected = true;
+    }
+    out.timestampMs = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    return true;
+}
+
 void RemoteController::runLoop() {
-    Command command = {0.0f, 0.0f, 0.0f, 0.0f, false};
-    
-    startConnection();
-
-    while (running.load()) 
-    {
-        _clientSocket = accept(_serverSocket, nullptr, nullptr);
-        if (_clientSocket < 0) {
-            perror("Client connection failed");
-            continue;
-        }
-
-        char buffer[BUFFER_SIZE] = {0};
-        int bytes_read = recv(_clientSocket, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_read > 0) {
-            buffer[bytes_read] = '\0';
-            std::cout << "Received command: " << buffer << std::endl;
-
-            // Process commands
-            command = processCommand(buffer);
-            
-            if(_statusToSend)
-            {
-                std::string response = "Drone status: Operational\n";
-                send(_clientSocket, response.c_str(), static_cast<int>(response.length()), 0);
-            }
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(REMOTE_INTERVAL_CHECK_MS));
-        std::cout << "RemoteController running..." << std::endl;
-    }
-    stopConnection();
-}
-//------------------------------------------------------------------------------------
-void RemoteController::startConnection()
-{   
-    // Create Unix domain socket
-    _serverSocket = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (_serverSocket < 0) {
-        perror("Socket creation failed");
-        return;
-    }
-
-    // Address
-    _serverAddress.sin_family = AF_INET;
-    _serverAddress.sin_port = htons(8080);
-    _serverAddress.sin_addr.s_addr = INADDR_ANY;
-
-    // Bind the socket
-    if (bind(_serverSocket, (struct sockaddr*)&_serverAddress, sizeof(_serverAddress)) < 0) {
-        std::cerr << "Socket bind failed: " << std::endl;
-        return;
-    }
-
-    // Start listening
-    if (listen(_serverSocket, 5) < 0) {
-        std::cerr << "Socket listen failed: " << std::endl;
-        return;
-    }
-
-    std::cout << "Drone server started, waiting for commands..." << std::endl;
-}
-void RemoteController::stopConnection()
-{
-    if (_serverSocket > 0 && _clientSocket > 0) {
-        
-        close(_clientSocket);
-        close(_serverSocket);
-        std::cout << "Drone connection (server) stopped." << std::endl;
+    const auto period = milliseconds(1000 / std::max<uint32_t>(1, _cfg.loopHz));
+    while (_running) {
+        RemoteData r;
+        if (readOnce(r) && _callback) _callback(r);
+        std::this_thread::sleep_for(period);
     }
 }
-RemoteController::Command RemoteController::processCommand(const std::string& command)
-{
-    Command cmd = {0.0f, 0.0f, 0.0f, 0.0f, false};
 
-    // Parse the command string
-    if (command.find("throttle") != std::string::npos) {
-        cmd.throttle = std::stof(command.substr(command.find("=") + 1));
+RemoteData RemoteController::mapChannelsToRemote(const std::vector<float>& channels) {
+    RemoteData r;
+    // Expect channels: throttle, aileron, elevator, rudder, switches...
+    if (channels.size() >= 4) {
+        r.throttle = channels[0];
+        r.roll = channels[1];
+        r.pitch = channels[2];
+        r.yaw = channels[3];
+        r.isConnected = true;
+    } else {
+        r.isConnected = false;
     }
-    if (command.find("yaw") != std::string::npos) {
-        cmd.yaw = std::stof(command.substr(command.find("=") + 1));
-    }
-    if (command.find("pitch") != std::string::npos) {
-        cmd.pitch = std::stof(command.substr(command.find("=") + 1));
-    }
-    if (command.find("roll") != std::string::npos) {
-        cmd.roll = std::stof(command.substr(command.find("=") + 1));
-    }
-    if (command.find("releasePayload") != std::string::npos) {
-        cmd.releasePayload = command.find("true") != std::string::npos;
-    }
-    return cmd;
+    // map additional channels to switches if present
+    if (channels.size() >= 5) r.modeSwitch = channels[4] > 0.5f;
+    if (channels.size() >= 6) r.killSwitch = channels[5] > 0.5f;
+    return r;
 }

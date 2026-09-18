@@ -1,40 +1,40 @@
-/**
- * @file TelemetryManager.hpp
- * @brief Header file for the TelemetryManager class.
- * Provides real-time data on altitude, speed, battery status, and environmental conditions.
- */
-
-#ifndef TELEMETRY_MANAGER_HPP
-#define TELEMETRY_MANAGER_HPP
-
-#include <thread>
-#include <atomic>
-#include <iostream>
-
+#pragma once
 #include "InterData.hpp"
+#include "HardwareAbstractions.hpp"
+#include <memory>
+#include <atomic>
+#include <thread>
+
+namespace uav {
 
 class TelemetryManager {
 public:
-    explicit TelemetryManager(Observer<SensorData>& telemetryObserver);
+    struct Config {
+        std::shared_ptr<hw::UartPort> telemetryUart; // TELEM1/2
+        uint32_t sendHz{5};
+    };
+
+    explicit TelemetryManager(const Config& cfg);
     ~TelemetryManager();
 
+    bool init();
     void start();
     void stop();
 
-protected:
-    void updateTelemetryData();
-    void sendTelemetryData();
+    // push telemetry packet to be sent (thread-safe)
+    void send(const TelemetryPacket& pkt);
 
-    static constexpr int TELEMETRY_UPDATE_INTERVAL_MS = 1000;
+    // optional callback when telemetry ack or command received
+    void setTelemetryCallback(TelemetryCallback cb);
 
-    std::string _telemetryPacket;
-    
 private:
     void runLoop();
-    std::thread moduleThread;
-    std::atomic<bool> running;
+    Config _cfg;
+    std::atomic<bool> _running{false};
+    std::thread _thread;
+    TelemetryCallback _callback;
 
-    Observer<SensorData>& _telemetryObserver;
+    // internal queue implementation omitted from header
 };
 
-#endif // TELEMETRY_MANAGER_HPP
+} // namespace uav

@@ -1,81 +1,75 @@
-/**
- * @file SensorManager.hpp
- * @brief Header file for SensorManager class.
- * Includes GPS, IMU (gyroscope, accelerometer), barometer, and magnetometer for precise movement tracking.
- * 
- */
-
-#ifndef SENSORMANAGER_HPP
-#define SENSORMANAGER_HPP
-
-#include <thread>
-#include <atomic>
-#include <iostream>
-#include <cstdint>
-#include <fstream>
-#include <string>
-
+#pragma once
 #include "InterData.hpp"
+#include "HardwareAbstractions.hpp"
+#include "MadgwickAHRS.hpp"
+#include <memory>
+#include <atomic>
+#include <thread>
+#include <functional>
+#include <mutex>
+#include <chrono>
+
+namespace uav {
 
 class SensorManager {
 public:
-    explicit SensorManager(
-        MessageQueue<SensorData>& sensorQueue,
-        Observer<SensorData>& sensorObserver);
+    struct Config {
+        std::shared_ptr<uav::hw::I2CBus> i2c;          // primary I2C bus
+        std::shared_ptr<uav::hw::UartPort> gpsUart;   // GPS UART (Ublox)
+        std::shared_ptr<uav::hw::UartPort> lidarUart; // LiDAR UART (TFmini)
+        uint32_t loopHz{100};                         // sensor read frequency
+        float madgwickBeta{0.12f};                    // AHRS tuning
+        // Optional addresses (override defaults)
+        uint8_t icmAddr{0x68};
+        uint8_t ms5611Addr{0x77};
+        uint8_t hmcAddr{0x1E};
+        uint8_t airspeedAddr{0x28}; // example
+    };
+
+    explicit SensorManager(const Config& cfg);
     ~SensorManager();
+
+    bool init();
     void start();
     void stop();
 
-protected:
-    struct SensorReadings
-    {
-        // IMU (Gyroscope + Accelerometer)
-        float accelX, accelY, accelZ;
-        float gyroX, gyroY, gyroZ;
+    // Register callback to receive fused SensorData
+    void setSensorCallback(SensorCallback cb);
 
-        // GPS
-        double latitude, longitude;
-        float speed; // Velocity (m/s)
-
-        // Barometer (Altitude)
-        float altitude; // Measured altitude in meters
-        float airPressure; // Atmospheric pressure in Pascals
-
-        // Magnetometer (Compass)
-        float heading; // Orientation (degrees)
-
-        // Battery Monitoring
-        float batteryVoltage;
-        int batteryPercentage;
-    };
-
-    int readRegister(std::string file, uint8_t reg);
-    void readIMUData(std::string file);
-    void readGPSData();
-    void readBarometerData(std::string file);
-    void readMagnetometerData(std::string file);
-
-    static constexpr int MPU6050_ADDR  = 0x68;
-    static constexpr int ACCEL_XOUT_H  = 0x3B;
-    static constexpr int GYRO_XOUT_H   = 0x43;
-    static constexpr auto GPS_DEVICE  = "/dev/ttyAMA0";
-    static constexpr int BMP280_ADDR   = 0x76;
-    static constexpr int PRESSURE_REG  = 0xF7;
-    static constexpr int HMC5883L_ADDR  = 0x1E;
-    static constexpr int MAG_XOUT_H    = 0x03;
-    static constexpr auto IMU_DEVICE_FILE = "/dev/i2c-1"; // IMU connected via I2C
-    static constexpr auto BAROMETER_DEVICE_FILE = "/dev/i2c-1"; // Barometer connected via I2C
-    static constexpr auto MAGNETOMETER_DEVICE_FILE = "/dev/i2c-1"; // Magnetometer connected via I2C
-
-    static constexpr int SENSOR_UPDATE_INTERVAL_MS = 100;
+    // Single-shot synchronous read
+    bool readOnce(SensorData& out);
 
 private:
     void runLoop();
-    std::thread moduleThread;
-    std::atomic<bool> running;
 
-    MessageQueue<SensorData>& _sensorQueue;
-    Observer<SensorData>& _sensorObserver;
+    // low-level readers
+    void readImu(SensorData& s);
+    void readBaro(SensorData& s);
+    void readCompass(SensorData& s);
+    void readGps(SensorData& s);
+    void readAirspeed(SensorData& s);
+    void readLidar(SensorData& s);
+
+    // helpers
+    bool readI2CRegister(uint8_t addr, uint8_t reg, uint8_t* buf, size_t len);
+    bool writeI2CRegister(uint8_t addr, uint8_t reg, const uint8_t* buf, size_t len);
+
+    Config _cfg;
+    std::atomic<bool> _running{false};
+    std::thread _thread;
+    SensorCallback _callback;
+    std::mutex _cbMutex;
+
+    // AHRS
+    MadgwickAHRS _ahrs;
+    std::chrono::steady_clock::time_point _lastAhrsTime;
+
+    // cached magnetometer raw values for AHRS
+    float _magX{0.0f}, _magY{0.0f}, _magZ{0.0f};
+
+    // internal buffers and state
+    std::vector<uint8_t> _gpsBuf;
+    std::mutex _gpsBufMutex;
 };
 
-#endif // SENSORMANAGER_HPP
+} // namespace uav

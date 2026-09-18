@@ -1,65 +1,80 @@
 #include "FlightController.hpp"
+#include <chrono>
+#include <cmath>
+#include <iostream>
 
-FlightController::FlightController(
-    MessageQueue<BatteryData>&  batteryQueue,
-    SharedResource<MotorData>&  motorData,
-    Observer<PayloadData>&      payloadObserver,
-    SharedResource<RemoteData>& remoteData,
-    MessageQueue<SensorData>&   sensorQueue) :
-    _batteryQueue(batteryQueue), 
-    _motorData(motorData),
-    _payloadObserver(payloadObserver), 
-    _remoteData(remoteData),
-    _sensorQueue(sensorQueue), 
-    running(false)
-{
-    _payloadObserver.addListener([this](const PayloadData& payloadData) {
-        this->onPayloadDataUpdated(payloadData);
-    });
-}
+using namespace uav;
+using namespace std::chrono;
+
+FlightController::FlightController(const Config& cfg) : _cfg(cfg) {}
+
 FlightController::~FlightController() {
     stop();
 }
-//------------------------------------------------------------------------------------
+
+bool FlightController::init() {
+    // initialize internal state
+    _lastMotor = MotorData{};
+    return true;
+}
+
 void FlightController::start() {
-    if (!running.load()) {
-        running.store(true);
-        moduleThread = std::thread(&FlightController::runLoop, this);
-    }
-}
-void FlightController::stop() {
-    if (running.load()) {
-        running.store(false);
-        if (moduleThread.joinable()) {
-            moduleThread.join();
+    if (_running.exchange(true)) return;
+    // start a control thread if desired; here we rely on external calls to onSensorUpdate
+    // but we can also run a periodic control loop
+    std::thread([this]() {
+        const auto period = milliseconds(1000 / std::max<uint32_t>(1, _cfg.loopHz));
+        while (_running) {
+            controlLoopIteration();
+            std::this_thread::sleep_for(period);
         }
-    }
+    }).detach();
 }
-//------------------------------------------------------------------------------------
-void FlightController::runLoop() {
-    
-    std::future<BatteryData> batteryData = {}; 
-    std::future<MotorData> motorData = {};
-    std::future<RemoteData> remoteData = {};
-    std::future<SensorData> sensorData = {};
 
-    while (running.load()) 
-    {
-        batteryData = _batteryQueue.popCommandAsync();
-        motorData = _motorData.getDataAsync();
-        remoteData = _remoteData.getDataAsync();
-        sensorData = _sensorQueue.popCommandAsync();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(FLIGHT_CONTROLLER_UPDATE_RATE_MS));
-
-        std::cout << "FlightController running" << std::endl;
-    }
+void FlightController::stop() {
+    _running = false;
 }
-//------------------------------------------------------------------------------------
-void FlightController::onPayloadDataUpdated(const PayloadData& payloadData) 
-{
-    std::cout << "Payload action: " << payloadData.action << std::endl;
-    std::cout << "Payload ID: " << payloadData.payloadId << std::endl;
 
-    _payloadCallbackData = payloadData;
+void FlightController::onSensorUpdate(const SensorData& s) {
+    _lastSensor = s;
+}
+
+void FlightController::onBatteryUpdate(const BatteryData& b) {
+    _lastBattery = b;
+}
+
+void FlightController::onRemoteUpdate(const RemoteData& r) {
+    _lastRemote = r;
+}
+
+void FlightController::setMotorOutputCallback(MotorCallback cb) {
+    _motorCb = std::move(cb);
+}
+
+MotorData FlightController::getMotorData() const {
+    return _lastMotor;
+}
+
+void FlightController::controlLoopIteration() {
+    // Very simple stabilization + throttle mapping example
+    // In real system, use proper PID controllers and sensor fusion (AHRS)
+    MotorData out;
+    // Basic throttle passthrough from RC
+    out.motorThrottle = _lastRemote.throttle;
+
+    // Simple servo mixing: map roll/pitch commands to servos
+    // Assume remote roll/pitch in -1..1
+    out.servoAileron = _lastRemote.roll;
+    out.servoElevator = _lastRemote.pitch;
+    out.servoRudder = _lastRemote.yaw;
+
+    // Failsafe: if RC disconnected or battery critical, cut throttle
+    if (!_lastRemote.isConnected || _lastBattery.isCritical) {
+        out.motorThrottle = 0.0f;
+    }
+
+    out.timestampMs = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    _lastMotor = out;
+
+    if (_motorCb) _motorCb(out);
 }

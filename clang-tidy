@@ -1,0 +1,70 @@
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  hicpp-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  misc-*,
+  # selectively enable these:
+  cppcoreguidelines-avoid-magic-numbers,
+  cppcoreguidelines-narrowing-conversions,
+  cppcoreguidelines-pro-type-const-cast,
+  cppcoreguidelines-pro-type-reinterpret-cast,
+  cppcoreguidelines-pro-type-static-cast-downcast,
+  cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  modernize-use-override,
+  modernize-use-using,
+  modernize-use-std-print,
+  modernize-use-std-numbers,
+  modernize-use-std-format,
+  modernize-use-std-span,
+  modernize-use-std-array,
+  modernize-use-std-byte,
+  modernize-use-std-move,
+  modernize-use-std-forward,
+  performance-noexcept-move-constructor,
+  performance-move-const-arg,
+  performance-unnecessary-value-param,
+  performance-inefficient-vector-operation,
+  performance-inefficient-string-concatenation,
+  performance-avoid-endl,
+  readability-identifier-naming,
+  readability-magic-numbers,
+  readability-qualified-auto,
+  readability-const-return-type,
+  readability-container-size-empty,
+  readability-redundant-smartptr-get,
+  readability-redundant-string-init
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: '.*'
+
+FormatStyle:     none
+AnalyzeTemporaryDtors: true
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: cppcoreguidelines-avoid-magic-numbers.IgnoreEnums
+    value: '1'
+  - key: cppcoreguidelines-avoid-magic-numbers.IgnoreMacros
+    value: '1'
+  - key: modernize-use-override.IgnoreDestructors
+    value: '1'
