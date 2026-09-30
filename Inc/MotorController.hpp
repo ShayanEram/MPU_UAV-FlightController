@@ -1,71 +1,68 @@
+#pragma once
 /**
  * @file MotorController.hpp
  * @brief Header file for the MotorController class.
  * Manages speed and direction of motors.
  */
 
-#ifndef MOTORCONTROLLER_HPP
-#define MOTORCONTROLLER_HPP
-
 #include <fcntl.h>
 
 #include <atomic>
-#include <chrono>
-#include <fstream>
-#include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 
+#include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
 class MotorController {
   public:
-    explicit MotorController(SharedResource<MotorData>& motorData);
-    ~MotorController();
-    void start();
-    void stop();
+    struct Config {
+        std::shared_ptr<HW::Pwm> m_pwm;
+        size_t                   m_motor_channel{0};
+        size_t                   m_aileron_channel{1};
+        size_t                   m_elevator_channel{2};
+        size_t                   m_rudder_channel{3};
 
-  protected:
-    enum class PitchDirection { FORWARD, BACKWARD };
-    enum class RollDirection { LEFT, RIGHT };
-    enum class YawDirection { LEFT, RIGHT, NONE };
-    enum class MotorStatus { DISABLED, ENABLED, FAILSAFE };
-    enum class MotorID { MOTOR_1, MOTOR_2, MOTOR_3, MOTOR_4 };
+        uint16_t m_motor_min_us{1000};
+        uint16_t m_motor_max_us{2000};
+        uint16_t m_servo_min_us{1000};
+        uint16_t m_servo_max_us{2000};
 
-    struct MotorDirection {
-        YawDirection   yaw;
-        PitchDirection pitch;
-        RollDirection  roll;
+        // Arming policy
+        bool  m_require_arm_switch{true}; // require explicit arm
+        float m_throttle_ramp_rate{1.0f}; // units per second (0..1)
     };
 
-    void setMotorDirection(const MotorDirection& direction);
-    int  setMotorSpeed(const MotorID& id, float throttle);
-    void stopMotors();
-    int  getMotorStatus(const MotorID& id) const;
-    void handleFailSafe();
-    void enableMotors();
-    void setMPwmPeriod(int period);
-    void writeHardware(const std::string& path, int value);
+    explicit MotorController(const Config& cfg);
+    ~MotorController();
 
-    const std::string PWM_PERIOD_PATH     = "/sys/class/pwm/pwmchip0/pwm0/period";
-    const std::string PWM_DUTY_CYCLE_PATH = "/sys/class/pwm/pwmchip0/pwm0/duty_cycle";
-    const std::string PWM_ENABLE_PATH     = "/sys/class/pwm/pwmchip0/pwm0/enable";
-    const std::string I2C_DEVICE_PATH     = "/dev/i2c-1";
+    explicit MotorController(const MotorController& rhs)   = delete;
+    explicit MotorController(MotorController&& rhs)        = delete;
+    MotorController& operator=(const MotorController& rhs) = delete;
+    MotorController& operator=(MotorController&& rhs)      = delete;
 
-    int   _currentSpeed;
-    float _pitchSpeed;
-    float _rollSpeed;
-    float _yawSpeed;
+    bool Initialize();
 
-    static constexpr int MAX_SPEED = 255;
-    static constexpr int MIN_SPEED = 0;
+    // Arm/disarm API
+    bool               Arm();    // returns true if armed
+    bool               Disarm(); // returns true if disarmed
+    [[nodiscard]] bool IsArmed() const;
+
+    // apply motor/servo outputs (values normalized -1..1 for servos, 0..1 for throttle)
+    bool Apply(const MotorData& out);
+
+    // set immediate failsafe (force outputs)
+    void SetFailsafe();
 
   private:
-    void              runLoop();
-    std::thread       moduleThread;
-    std::atomic<bool> running;
+    void Step();
 
-    SharedResource<MotorData>& _motorData;
+    [[nodiscard]] uint16_t ThrottleToPulse(float t) const;
+    [[nodiscard]] uint16_t ServoToPulse(float s) const;
+
+    Config                                m_cfg;
+    std::atomic<bool>                     m_armed{false};
+    std::atomic<float>                    m_last_throttle{0.0f};
+    std::chrono::steady_clock::time_point m_last_apply_time;
 };
-
-#endif // MOTORCONTROLLER_HPP

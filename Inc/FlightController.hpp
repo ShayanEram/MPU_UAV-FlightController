@@ -1,44 +1,55 @@
+#pragma once
 /**
  * @file FlightController.hpp
  * @brief Header file for the FlightController class.
  * The brain of the aircraft, responsible for stabilization, navigation, and autonomous flight.
  */
 
-#ifndef FLIGHTCONTROLLER_HPP
-#define FLIGHTCONTROLLER_HPP
-
-#include <atomic>
-#include <iostream>
-#include <thread>
-
 #include "InterData.hpp"
 
 class FlightController {
   public:
-    explicit FlightController(MessageQueue<BatteryData>& batteryQueue, SharedResource<MotorData>& motorData,
-                              Observer<PayloadData>& payloadObserver, SharedResource<RemoteData>& remoteData,
-                              MessageQueue<SensorData>& sensorQueue);
+    struct Config {
+        // tuning parameters, control loop frequency, failsafe thresholds
+        float    m_kp_roll{1.0F}, m_ki_roll{0.0F}, m_kd_roll{0.0F};
+        float    m_kp_pitch{1.0F}, m_ki_pitch{0.0F}, m_kd_pitch{0.0F};
+        float    m_kp_yaw{1.0F}, m_ki_yaw{0.0F}, m_kd_yaw{0.0F};
+        uint32_t m_loop_hz{REFRESH_RATE_HZ};
+    };
+
+    explicit FlightController(const Config& cfg);
     ~FlightController();
 
-    void start();
-    void stop();
+    explicit FlightController(const FlightController& rhs)   = delete;
+    explicit FlightController(FlightController&& rhs)        = delete;
+    FlightController& operator=(const FlightController& rhs) = delete;
+    FlightController& operator=(FlightController&& rhs)      = delete;
 
-  protected:
-    void        onPayloadDataUpdated(const PayloadData& payloadData);
-    PayloadData _payloadCallbackData = {};
+    bool Initialize();
 
-    static constexpr int FLIGHT_CONTROLLER_UPDATE_RATE_MS = 100; // Update rate in milliseconds
+    // input sources (called by higher-level orchestrator or callbacks)
+    void OnSensorUpdate(const SensorData& s);
+    void OnBatteryUpdate(const BatteryData& b);
+    void OnRemoteUpdate(const RemoteData& r);
+
+    // output sink (set by orchestrator)
+    void SetMotorOutputCallback(MotorCallback cb);
+
+    // request current motor outputs
+    [[nodiscard]] MotorData GetMotorData() const;
 
   private:
-    void              runLoop();
-    std::thread       moduleThread;
-    std::atomic<bool> running;
+    void ControlStep();
 
-    MessageQueue<BatteryData>&  _batteryQueue;
-    SharedResource<MotorData>&  _motorData;
-    Observer<PayloadData>&      _payloadObserver;
-    SharedResource<RemoteData>& _remoteData;
-    MessageQueue<SensorData>&   _sensorQueue;
+    Config m_cfg;
+
+    // internal state
+    SensorData  m_last_sensor;
+    BatteryData m_last_battery;
+    RemoteData  m_last_remote;
+    MotorData   m_last_motor;
+
+    MotorCallback m_motor_cb;
+
+    static constexpr auto REFRESH_RATE_HZ = 200;
 };
-
-#endif // FLIGHTCONTROLLER_HPP
