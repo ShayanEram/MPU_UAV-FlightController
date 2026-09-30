@@ -21,7 +21,7 @@ To build and run this project, you will need the following:
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-repo/MPU_Unmanned-Aerial-Vehicle.git
+   git clone --recursive <repo-url>
    cd MPU_Unmanned-Aerial-Vehicle
    ```
 
@@ -37,15 +37,18 @@ To build and run this project, you will need the following:
 ## **Building the Application**
 
 ### CMD
+   ```sh
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
    clang-tools --install 18
 
    conan profile detect
+   conan export Inc/Hardware_Interface/third_party
    conan install . --build=missing
    cmake --preset conan-release
    cmake --build --preset conan-release
+   ```
 ---
 
 ## **Expected Results**

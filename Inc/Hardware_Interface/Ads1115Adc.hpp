@@ -4,7 +4,7 @@
 
 #include "HardwareAbstractions.hpp"
 
-namespace HW {
+namespace HW::IF {
     class Ads1115Adc : public Adc {
       public:
         Ads1115Adc(std::shared_ptr<I2C> i2c, uint8_t addr = I2C_DEFAULT_ADDR);
@@ -27,4 +27,4 @@ namespace HW {
 
         static constexpr auto I2C_DEFAULT_ADDR = 0x48;
     };
-} // namespace HW
+} // namespace HW::IF

@@ -5,7 +5,7 @@
 
 #include "HardwareAbstractions.hpp"
 
-namespace HW {
+namespace HW::IF {
     class UartPort : public Uart {
       public:
         explicit UartPort(const std::string& device);
@@ -27,4 +27,4 @@ namespace HW {
         int         m_fd{-1};
         termios     m_orig{};
     };
-} // namespace HW
+} // namespace HW::IF

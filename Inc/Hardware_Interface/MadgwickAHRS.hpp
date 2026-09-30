@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
 
-namespace HW {
+namespace HW::IF {
     class MadgwickAHRS {
       public:
         MadgwickAHRS(float beta = FILTER_GAIN);
@@ -21,4 +21,4 @@ namespace HW {
 
         static constexpr auto FILTER_GAIN = 0.1F;
     };
-} // namespace HW
+} // namespace HW::IF

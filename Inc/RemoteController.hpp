@@ -11,13 +11,20 @@
 
 #include <atomic>
 #include <cstring>
+#include <memory>
 #include <thread>
 
+#include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
 class RemoteController {
   public:
-    explicit RemoteController();
+    struct Config {
+        std::shared_ptr<HW::Rc> m_rc_input; // PPM/SBUS adapter
+        uint32_t                m_loop_hz{UPDATE_FREQ};
+    };
+
+    explicit RemoteController(const Config& cfg);
     ~RemoteController();
 
     explicit RemoteController(const RemoteController& rhs)   = delete;
@@ -27,6 +34,15 @@ class RemoteController {
 
     bool Initialize();
 
+    void SetRemoteCallback(RemoteCallback cb);
+    bool ReadOnce(RemoteData& out);
+
   private:
-    void Step();
+    void       StepRC();
+    RemoteData MapChannelsToRemote(const std::vector<float>& channels);
+
+    Config         m_cfg;
+    RemoteCallback m_callback;
+
+    static constexpr auto UPDATE_FREQ = 50;
 };

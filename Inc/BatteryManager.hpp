@@ -33,7 +33,7 @@ class BatteryManager {
     bool ReadOnce(BatteryData& out);
 
   private:
-    bool Step();
+    bool StepBM();
 
     Config          m_cfg;
     BatteryCallback m_callback;

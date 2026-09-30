@@ -6,11 +6,14 @@ set(PROJECT_NAME UAV_FlightController)
 include(CTest)
 include(${CMAKE_BINARY_DIR}/generators/conan_toolchain.cmake)
 
-# Global find_package calls
+# Global find_package calls for Conan dependencies
 find_package(Boost REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(mavlink REQUIRED) # <--- 1. ADD THIS FOR MAVLINK
+
+# --------------------------------------------
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -21,6 +24,7 @@ file(GLOB_RECURSE SRC_FILES
 )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/Inc
     ${CMAKE_SOURCE_DIR}/Inc/Utils
@@ -31,6 +35,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
     spdlog::spdlog_header_only
+    mavlink::mavlink
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC BOOST_ASIO_NO_DEPRECATED)
@@ -57,6 +62,7 @@ if(BUILD_TESTS)
         gtest
         gtest_main
         pthread
+        mavlink::mavlink
     )
 
     enable_testing()

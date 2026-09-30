@@ -39,7 +39,7 @@ class FlightController {
     [[nodiscard]] MotorData GetMotorData() const;
 
   private:
-    void ControlStep();
+    void StepFC();
 
     Config m_cfg;
 

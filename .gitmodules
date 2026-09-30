@@ -1,0 +1,3 @@
+[submodule "Inc/Hardware_Interface/c_library_v2"]
+	path = Inc/Hardware_Interface/third_party/c_library_v2
+	url = https://github.com/mavlink/c_library_v2.git

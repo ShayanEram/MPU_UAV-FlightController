@@ -4,7 +4,7 @@
 
 #include "HardwareAbstractions.hpp"
 
-namespace HW {
+namespace HW::IF {
     class SbusRc : public Rc {
       public:
         explicit SbusRc(std::shared_ptr<Uart> uart);
@@ -21,4 +21,4 @@ namespace HW {
         std::shared_ptr<Uart> m_uart;
         bool                  ParseSbusFrame(const uint8_t* buf, size_t len, std::vector<int>& out_raw);
     };
-} // namespace HW
+} // namespace HW::IF

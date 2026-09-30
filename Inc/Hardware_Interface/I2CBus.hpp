@@ -8,7 +8,7 @@
 
 #include "HardwareAbstractions.hpp"
 
-namespace HW {
+namespace HW::IF {
     class I2CBus : public I2C {
       public:
         explicit I2CBus(const std::string& dev = I2C_DEV_PATH);
@@ -31,4 +31,4 @@ namespace HW {
 
         static constexpr auto I2C_DEV_PATH = "/dev/i2c-1";
     };
-} // namespace HW
+} // namespace HW::IF

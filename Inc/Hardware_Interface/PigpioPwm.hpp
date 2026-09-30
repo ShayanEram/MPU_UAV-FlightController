@@ -4,7 +4,7 @@
 
 #include "HardwareAbstractions.hpp"
 
-namespace HW {
+namespace HW::IF {
     class PigpioPwm : public Pwm {
       public:
         // channels: vector of GPIO pins for channels 0..N-1
@@ -25,4 +25,4 @@ namespace HW {
         bool                     InitPigpio();
         void                     ShutdownPigpio();
     };
-} // namespace HW
+} // namespace HW::IF
