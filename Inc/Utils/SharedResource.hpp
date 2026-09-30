@@ -1,12 +1,11 @@
 #ifndef SHARED_RESOURCE_HPP
 #define SHARED_RESOURCE_HPP
 
-#include <mutex>
 #include <future>
+#include <mutex>
 
-template <typename T>
-class SharedResource {
-public:
+template <typename T> class SharedResource {
+  public:
     void setData(T data) {
         std::lock_guard<std::mutex> lock(resourceMutex);
         sharedData = data;
@@ -21,8 +20,8 @@ public:
         return std::async(std::launch::async, &SharedResource::getData, this);
     }
 
-private:
-    T sharedData;
+  private:
+    T          sharedData;
     std::mutex resourceMutex;
 };
 

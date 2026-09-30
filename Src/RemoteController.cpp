@@ -1,4 +1,5 @@
 #include "RemoteController.hpp"
+
 #include <string>
 
 RemoteController::RemoteController(SharedResource<RemoteData>& remoteData) : _remoteData(remoteData), running(false) {
@@ -25,11 +26,10 @@ void RemoteController::stop() {
 //------------------------------------------------------------------------------------
 void RemoteController::runLoop() {
     Command command = {0.0f, 0.0f, 0.0f, 0.0f, false};
-    
+
     startConnection();
 
-    while (running.load()) 
-    {
+    while (running.load()) {
         _clientSocket = accept(_serverSocket, nullptr, nullptr);
         if (_clientSocket < 0) {
             perror("Client connection failed");
@@ -37,16 +37,15 @@ void RemoteController::runLoop() {
         }
 
         char buffer[BUFFER_SIZE] = {0};
-        int bytes_read = recv(_clientSocket, buffer, sizeof(buffer) - 1, 0);
+        int  bytes_read          = recv(_clientSocket, buffer, sizeof(buffer) - 1, 0);
         if (bytes_read > 0) {
             buffer[bytes_read] = '\0';
             std::cout << "Received command: " << buffer << std::endl;
 
             // Process commands
             command = processCommand(buffer);
-            
-            if(_statusToSend)
-            {
+
+            if (_statusToSend) {
                 std::string response = "Drone status: Operational\n";
                 send(_clientSocket, response.c_str(), static_cast<int>(response.length()), 0);
             }
@@ -57,8 +56,7 @@ void RemoteController::runLoop() {
     stopConnection();
 }
 //------------------------------------------------------------------------------------
-void RemoteController::startConnection()
-{   
+void RemoteController::startConnection() {
     // Create Unix domain socket
     _serverSocket = socket(AF_UNIX, SOCK_STREAM, 0);
     if (_serverSocket < 0) {
@@ -67,8 +65,8 @@ void RemoteController::startConnection()
     }
 
     // Address
-    _serverAddress.sin_family = AF_INET;
-    _serverAddress.sin_port = htons(8080);
+    _serverAddress.sin_family      = AF_INET;
+    _serverAddress.sin_port        = htons(8080);
     _serverAddress.sin_addr.s_addr = INADDR_ANY;
 
     // Bind the socket
@@ -85,17 +83,15 @@ void RemoteController::startConnection()
 
     std::cout << "Drone server started, waiting for commands..." << std::endl;
 }
-void RemoteController::stopConnection()
-{
+void RemoteController::stopConnection() {
     if (_serverSocket > 0 && _clientSocket > 0) {
-        
+
         close(_clientSocket);
         close(_serverSocket);
         std::cout << "Drone connection (server) stopped." << std::endl;
     }
 }
-RemoteController::Command RemoteController::processCommand(const std::string& command)
-{
+RemoteController::Command RemoteController::processCommand(const std::string& command) {
     Command cmd = {0.0f, 0.0f, 0.0f, 0.0f, false};
 
     // Parse the command string

@@ -1,0 +1,64 @@
+---
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  hicpp-*,
+  misc-*,
+  -misc-include-cleaner,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  -performance-avoid-endl,
+  -performance-enum-size,
+  portability-*,
+  -portability-avoid-pragma-once,
+  readability-*,
+  -readability-identifier-length
+
+WarningsAsErrors: ""
+HeaderFilterRegex: ""
+FormatStyle: file
+
+CheckOptions:
+  # Namespaces & Classes
+  readability-identifier-naming.NamespaceCase: CamelCase
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+
+  # Functions & Methods
+  readability-identifier-naming.FunctionCase: CamelCase
+  readability-identifier-naming.MethodCase: CamelCase
+  readability-identifier-naming.FunctionIgnoredRegexp: '^fmi.*'
+
+  # Variables & Members
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.MemberCase: lower_case
+  readability-identifier-naming.MemberPrefix: "m_"
+  readability-identifier-naming.PrivateMemberCase: lower_case
+  readability-identifier-naming.PrivateMemberPrefix: "m_"
+  readability-identifier-naming.ProtectedMemberCase: lower_case
+  readability-identifier-naming.ProtectedMemberPrefix: "m_"
+
+  # Statics & Globals
+  readability-identifier-naming.StaticVariableCase: lower_case
+  readability-identifier-naming.StaticVariablePrefix: "s_"
+  readability-identifier-naming.StaticMemberPrefix: "s_"
+  readability-identifier-naming.GlobalVariableCase: lower_case
+
+  # Enums & Constants
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+
+  # Overrides & Guideline Exceptions
+  cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: "true"
+  cert-err33-c.AllowCastToVoid: "true"
+  llvm-else-after-return.WarnOnConditionVariables: "false"
+  llvm-else-after-return.WarnOnUnfixable: "false"
+  llvm-qualified-auto.AddConstToQualified: "false"

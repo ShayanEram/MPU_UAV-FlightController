@@ -37,15 +37,15 @@ To build and run this project, you will need the following:
 ## **Building the Application**
 
 ### CMD
-    cd MPU_Gateway
-    cmake --preset Debug (Release)
-    cd build
-    cmake ..
-    make
-### VS Code
-    cmake --preset Debug (Release)
-    Build
-    Run
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   clang-tools --install 18
+
+   conan profile detect
+   conan install . --build=missing
+   cmake --preset conan-release
+   cmake --build --preset conan-release
 ---
 
 ## **Expected Results**

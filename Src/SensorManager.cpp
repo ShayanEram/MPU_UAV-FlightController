@@ -1,6 +1,7 @@
 #include "SensorManager.hpp"
 
-SensorManager::SensorManager(MessageQueue<SensorData>& sensorQueue, Observer<SensorData>& sensorObserver) : _sensorQueue(sensorQueue), _sensorObserver(sensorObserver), running(false) {
+SensorManager::SensorManager(MessageQueue<SensorData>& sensorQueue, Observer<SensorData>& sensorObserver) :
+    _sensorQueue(sensorQueue), _sensorObserver(sensorObserver), running(false) {
     // Constructor implementation
 }
 SensorManager::~SensorManager() {
@@ -24,13 +25,12 @@ void SensorManager::stop() {
 //------------------------------------------------------------------------------------
 void SensorManager::runLoop() {
 
-    while (running.load()) 
-    {
+    while (running.load()) {
         SensorReadings data = {};
-        
+
         readIMUData(IMU_DEVICE_FILE); // Reads and prints IMU data
         data.accelX = static_cast<float>(readRegister(IMU_DEVICE_FILE, ACCEL_XOUT_H));
-        data.gyroX = static_cast<float>(readRegister(IMU_DEVICE_FILE, GYRO_XOUT_H));
+        data.gyroX  = static_cast<float>(readRegister(IMU_DEVICE_FILE, GYRO_XOUT_H));
 
         // Read GPS
         readGPSData(); // Reads and prints GPS data
@@ -49,8 +49,7 @@ void SensorManager::runLoop() {
     }
 }
 //------------------------------------------------------------------------------------
-int SensorManager::readRegister(std::string file, uint8_t reg)
-{
+int SensorManager::readRegister(std::string file, uint8_t reg) {
     std::fstream fs;
     fs.open(file, std::ios::in | std::ios::out);
     if (!fs.is_open()) {
@@ -63,18 +62,16 @@ int SensorManager::readRegister(std::string file, uint8_t reg)
     fs.close();
     return value;
 }
-void SensorManager::readIMUData(std::string file)
-{
+void SensorManager::readIMUData(std::string file) {
     int accelX = (readRegister(file, ACCEL_XOUT_H) << 8) | readRegister(file, ACCEL_XOUT_H + 1);
-    int gyroX = (readRegister(file, GYRO_XOUT_H) << 8) | readRegister(file, GYRO_XOUT_H + 1);
+    int gyroX  = (readRegister(file, GYRO_XOUT_H) << 8) | readRegister(file, GYRO_XOUT_H + 1);
 
     std::cout << "IMU Data - AccelX: " << accelX << " GyroX: " << gyroX << std::endl;
 }
-void SensorManager::readGPSData()
-{
+void SensorManager::readGPSData() {
     std::ifstream gpsFile(GPS_DEVICE);
-    std::string line;
-    
+    std::string   line;
+
     while (getline(gpsFile, line)) {
         if (line.find("$GPGGA") != std::string::npos) { // Look for GPGGA sentence
             std::cout << "GPS Data: " << line << std::endl;
@@ -82,8 +79,7 @@ void SensorManager::readGPSData()
         }
     }
 }
-void SensorManager::readBarometerData(std::string file)
-{
+void SensorManager::readBarometerData(std::string file) {
     std::fstream barometerFile;
     barometerFile.open(file, std::ios::in | std::ios::out);
     if (!barometerFile.is_open()) {
@@ -98,8 +94,7 @@ void SensorManager::readBarometerData(std::string file)
     int pressure = (buffer[0] << 12) | (buffer[1] << 4) | (buffer[2] >> 4);
     std::cout << "Barometer Pressure: " << pressure << " Pa" << std::endl;
 }
-void SensorManager::readMagnetometerData(std::string file)
-{
+void SensorManager::readMagnetometerData(std::string file) {
     int magX = (readRegister(file, MAG_XOUT_H) << 8) | readRegister(file, MAG_XOUT_H + 1);
     std::cout << "Magnetometer Heading: " << magX << std::endl;
 }

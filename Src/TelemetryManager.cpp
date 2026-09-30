@@ -1,6 +1,7 @@
 #include "TelemetryManager.hpp"
 
-TelemetryManager::TelemetryManager(Observer<SensorData>& telemetryObserver) : _telemetryObserver(telemetryObserver), running(false) {
+TelemetryManager::TelemetryManager(Observer<SensorData>& telemetryObserver) :
+    _telemetryObserver(telemetryObserver), running(false) {
     _telemetryPacket = "Telemetry Data: Altitude, Speed, Battery, Environment";
 }
 TelemetryManager::~TelemetryManager() {
@@ -29,16 +30,14 @@ void TelemetryManager::runLoop() {
         sendTelemetryData();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(TELEMETRY_UPDATE_INTERVAL_MS));
-        
-        std:: cout << "TelemetryManager running... Data sent." << std::endl;
+
+        std::cout << "TelemetryManager running... Data sent." << std::endl;
     }
 }
 //------------------------------------------------------------------------------------
-void TelemetryManager::updateTelemetryData()
-{
+void TelemetryManager::updateTelemetryData() {
     _telemetryPacket = "Updated Telemetry Data: Altitude, Speed, Battery, Environment";
 }
-void TelemetryManager::sendTelemetryData()
-{
+void TelemetryManager::sendTelemetryData() {
     std::cout << _telemetryPacket << std::endl;
 }

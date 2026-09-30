@@ -1,17 +1,18 @@
 #include <gtest/gtest.h>
+
 #include "MotorController.hpp"
 #include "SharedResource.hpp"
 
 class TestableMotorController : public MotorController {
-public:
+  public:
     using MotorController::MotorController;
-    using MotorController::setMotorSpeed;
     using MotorController::MotorID;
+    using MotorController::setMotorSpeed;
 };
 
 TEST(MotorControllerTest, SetMotorSpeedClampsToMinAndMax) {
     SharedResource<MotorData> dummyMotorData;
-    TestableMotorController controller(dummyMotorData);
+    TestableMotorController   controller(dummyMotorData);
 
     // Test throttle below minimum
     int minSpeed = controller.setMotorSpeed(TestableMotorController::MotorID::MOTOR_1, -1.0f);

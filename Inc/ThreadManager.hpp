@@ -3,16 +3,15 @@
 
 #include "BatteryManager.hpp"
 #include "FlightController.hpp"
+#include "InterData.hpp"
 #include "MotorController.hpp"
 #include "PayloadManager.hpp"
 #include "RemoteController.hpp"
 #include "SensorManager.hpp"
 #include "TelemetryManager.hpp"
 
-#include "InterData.hpp"
-
 class ThreadManager final {
-public:
+  public:
     static ThreadManager& getInstance() {
         static ThreadManager instance;
         return instance;
@@ -20,27 +19,27 @@ public:
     void startAll();
     void stopAll();
 
-protected:
-    BatteryManager batteryManager;
+  protected:
+    BatteryManager   batteryManager;
     FlightController flightController;
-    MotorController motorController;
-    PayloadManager payloadManager;
+    MotorController  motorController;
+    PayloadManager   payloadManager;
     RemoteController remoteController;
-    SensorManager sensorManager;
+    SensorManager    sensorManager;
     TelemetryManager telemetryManager;
 
     /*Shared communication objects: */
-    MessageQueue<BatteryData> batteryFlightQueue;
-    SharedResource<MotorData> motorFlightData;
-    Observer<PayloadData> payloadFlightObserver;
+    MessageQueue<BatteryData>  batteryFlightQueue;
+    SharedResource<MotorData>  motorFlightData;
+    Observer<PayloadData>      payloadFlightObserver;
     SharedResource<RemoteData> remoteFlightData;
-    MessageQueue<SensorData> sensorFlightQueue;
-    Observer<SensorData> telemetrySensorObserver;
+    MessageQueue<SensorData>   sensorFlightQueue;
+    Observer<SensorData>       telemetrySensorObserver;
 
-private:
+  private:
     ThreadManager();
-    ~ThreadManager() = default;
-    ThreadManager(const ThreadManager&) = delete;
+    ~ThreadManager()                               = default;
+    ThreadManager(const ThreadManager&)            = delete;
     ThreadManager& operator=(const ThreadManager&) = delete;
 };
 

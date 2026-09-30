@@ -1,0 +1,80 @@
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Auto
+
+# Indentation & spacing
+IndentWidth: 4
+TabWidth: 8
+UseTab: Never
+ColumnLimit: 130
+
+# Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  BeforeElse: true
+  BeforeCatch: true
+  BeforeWhile: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+
+# Includes
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<ext/.*\.h>'
+    Priority: 2
+  - Regex: '^<UeiDaq\.h>'
+    Priority: 98
+  - Regex: '^<Uei.*\.h>'
+    Priority: 99
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: "^<.*"
+    Priority: 2
+  - Regex: ".*"
+    Priority: 3
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AlignConsecutiveAssignments:
+  Enabled: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+AlignConsecutiveMacros:
+  Enabled: true
+
+# Pointers & references
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Namespaces
+NamespaceIndentation: All
+FixNamespaceComments: true
+
+# Constructor / inheritance formatting
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterComma
+
+# Spacing
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterPlacementOperator: true
+SpaceAfterCStyleCast: false
+
+# Comments
+ReflowComments: true
+
+# Preprocessor
+IndentPPDirectives: None
+
+# Wrapping penalties
+PenaltyBreakBeforeFirstCallParameter: 1

@@ -7,50 +7,49 @@
 #ifndef REMOTE_CONTROLLER_HPP
 #define REMOTE_CONTROLLER_HPP
 
-#include <thread>
-#include <atomic>
-#include <iostream>
-
-#include <cstring>
-#include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <atomic>
+#include <cstring>
+#include <iostream>
+#include <thread>
+
 #include "InterData.hpp"
 
 class RemoteController {
-public:
+  public:
     explicit RemoteController(SharedResource<RemoteData>& _remoteData);
     ~RemoteController();
     void start();
     void stop();
 
-protected:
+  protected:
     struct Command {
         float throttle;
         float yaw;
         float pitch;
         float roll;
-        bool releasePayload;
+        bool  releasePayload;
     };
 
-    void startConnection();
-    void stopConnection();
+    void    startConnection();
+    void    stopConnection();
     Command processCommand(const std::string& command);
 
-    static constexpr int BUFFER_SIZE = 1024;
+    static constexpr int BUFFER_SIZE              = 1024;
     static constexpr int REMOTE_INTERVAL_CHECK_MS = 10;
 
     static constexpr const char* SOCKET_PATH = "/tmp/remote_controller_socket";
-    bool _isConnected;
-    int  _serverSocket, _clientSocket;
-    bool _statusToSend;
-    sockaddr_in _serverAddress;
+    bool                         _isConnected;
+    int                          _serverSocket, _clientSocket;
+    bool                         _statusToSend;
+    sockaddr_in                  _serverAddress;
 
-private:
-    void runLoop();
-    std::thread moduleThread;
+  private:
+    void              runLoop();
+    std::thread       moduleThread;
     std::atomic<bool> running;
 
     SharedResource<RemoteData>& _remoteData;

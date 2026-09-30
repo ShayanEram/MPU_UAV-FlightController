@@ -1,7 +1,7 @@
 #include "PayloadManager.hpp"
 
 PayloadManager::PayloadManager(Observer<PayloadData>& payloadObserver) : _payloadObserver(payloadObserver), running(false) {
-    _isPayloadLoaded = false;
+    _isPayloadLoaded         = false;
     _releasePayloadRequested = false;
 }
 
@@ -29,21 +29,22 @@ void PayloadManager::runLoop() {
 
         PayloadState status = getPayloadStatus();
 
-        if(status == PayloadState::LOADED && !_isPayloadLoaded) {
+        if (status == PayloadState::LOADED && !_isPayloadLoaded) {
             loadPayload();
             _isPayloadLoaded = true;
-        } else if (status == PayloadState::UNLOADED && _isPayloadLoaded) {
+        }
+        else if (status == PayloadState::UNLOADED && _isPayloadLoaded) {
             _isPayloadLoaded = false;
 
-            if(_releasePayloadRequested)
-            {
+            if (_releasePayloadRequested) {
                 unloadPayload();
                 _releasePayloadRequested = false;
-            } else {
+            }
+            else {
                 std::cout << "Payload is unloaded, but no release requested." << std::endl;
             }
-
-        } else if (status == PayloadState::ERROR) {
+        }
+        else if (status == PayloadState::ERROR) {
             std::cerr << "Error in payload operation!" << std::endl;
         }
 
@@ -53,36 +54,37 @@ void PayloadManager::runLoop() {
     }
 }
 //------------------------------------------------------------------------------------
-void PayloadManager::loadPayload() 
-{
+void PayloadManager::loadPayload() {
     if (writeGPIO(PAYLOAD_LOAD_PATH, 1)) {
         std::cout << "Payload loaded successfully!" << std::endl;
-    } else {
+    }
+    else {
         std::cerr << "Failed to load payload!" << std::endl;
     }
 }
 
-void PayloadManager::unloadPayload() 
-{
+void PayloadManager::unloadPayload() {
     if (writeGPIO(PAYLOAD_UNLOAD_PATH, 1)) {
         std::cout << "Payload unloaded successfully!" << std::endl;
-    } else {
+    }
+    else {
         std::cerr << "Failed to unload payload!" << std::endl;
     }
 }
 
-PayloadManager::PayloadState PayloadManager::getPayloadStatus() const 
-{
-    int loadState = readGPIO(PAYLOAD_LOAD_PATH);
+PayloadManager::PayloadState PayloadManager::getPayloadStatus() const {
+    int loadState   = readGPIO(PAYLOAD_LOAD_PATH);
     int unloadState = readGPIO(PAYLOAD_UNLOAD_PATH);
-    
+
     if (loadState == 1) {
         std::cout << "Payload Status: **Loaded**" << std::endl;
         return PayloadState::LOADED;
-    } else if (unloadState == 1) {
+    }
+    else if (unloadState == 1) {
         std::cout << "Payload Status: **Unloaded**" << std::endl;
         return PayloadState::UNLOADED;
-    } else {
+    }
+    else {
         std::cout << "Payload Status: **Idle**" << std::endl;
         return PayloadState::ERROR; // Assuming error if neither loaded nor unloaded
     }
@@ -90,8 +92,7 @@ PayloadManager::PayloadState PayloadManager::getPayloadStatus() const
     return PayloadState::ERROR; // Fallback in case of unexpected state
 }
 
-bool PayloadManager::writeGPIO(const std::string &gpioPath, int value) const 
-{
+bool PayloadManager::writeGPIO(const std::string& gpioPath, int value) const {
     std::ofstream gpioFile(gpioPath);
     if (gpioFile.is_open()) {
         gpioFile << value;
@@ -101,10 +102,9 @@ bool PayloadManager::writeGPIO(const std::string &gpioPath, int value) const
     return false;
 }
 
-int PayloadManager::readGPIO(const std::string &gpioPath) const 
-{
+int PayloadManager::readGPIO(const std::string& gpioPath) const {
     std::ifstream gpioFile(gpioPath);
-    int value = -1;
+    int           value = -1;
     if (gpioFile.is_open()) {
         gpioFile >> value;
         gpioFile.close();

@@ -1,14 +1,13 @@
 #ifndef OBSERVER_HPP
 #define OBSERVER_HPP
 
-#include <vector>
-#include <string>
 #include <functional>
 #include <future>
+#include <string>
+#include <vector>
 
-template <typename T>
-class Observer {
-public:
+template <typename T> class Observer {
+  public:
     void addListener(std::function<void(T)> callback) {
         listeners.push_back(callback);
     }
@@ -25,7 +24,7 @@ public:
         }
     }
 
-private:
+  private:
     std::vector<std::function<void(T)>> listeners;
 };
 
