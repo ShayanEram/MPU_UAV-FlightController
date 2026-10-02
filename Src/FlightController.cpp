@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 // #include "FlightController.hpp"
 
 // FlightController::FlightController(MessageQueue<BatteryData>& batteryQueue, SharedResource<MotorData>& motorData,

@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 // #include "TelemetryManager.hpp"
 
 // TelemetryManager::TelemetryManager(Observer<SensorData>& telemetryObserver) :

@@ -22,7 +22,9 @@ class RemoteController {
         uint32_t                m_loop_hz{UPDATE_FREQ};
     };
 
-    explicit RemoteController(const Config& cfg);
+    enum class ChannelIndex { CHANNEL_1, CHANNEL_2, CHANNEL_3, CHANNEL_4, CHANNEL_5, CHANNEL_6 };
+
+    explicit RemoteController(Config& cfg);
     ~RemoteController();
 
     explicit RemoteController(const RemoteController& rhs)   = delete;

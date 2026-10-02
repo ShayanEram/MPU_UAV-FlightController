@@ -33,7 +33,7 @@ class MotorController {
         float m_throttle_ramp_rate{1.0F}; // units per second (0..1)
     };
 
-    explicit MotorController(const Config& cfg);
+    explicit MotorController(Config& cfg);
     ~MotorController();
 
     explicit MotorController(const MotorController& rhs)   = delete;
@@ -48,19 +48,18 @@ class MotorController {
     bool               Disarm(); // returns true if disarmed
     [[nodiscard]] bool IsArmed() const;
 
-    // apply motor/servo outputs (values normalized -1..1 for servos, 0..1 for throttle)
-    bool Apply(const MotorData& out);
-
     // set immediate failsafe (force outputs)
     void SetFailsafe();
 
   private:
-    void StepMC();
+    // apply motor/servo outputs (values normalized -1..1 for servos, 0..1 for throttle)
+    bool StepMC(const MotorData& out);
 
     [[nodiscard]] uint16_t ThrottleToPulse(float t) const;
     [[nodiscard]] uint16_t ServoToPulse(float s) const;
 
     Config                                m_cfg;
+    std::mutex                            m_apply_mutex;
     std::atomic<bool>                     m_armed{false};
     std::atomic<float>                    m_last_throttle{0.0F};
     std::chrono::steady_clock::time_point m_last_apply_time;

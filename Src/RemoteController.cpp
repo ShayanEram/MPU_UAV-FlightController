@@ -1,114 +1,73 @@
-// #include "RemoteController.hpp"
+#include "RemoteController.hpp"
 
-// #include <string>
+#include <spdlog/spdlog.h>
 
-// RemoteController::RemoteController(SharedResource<RemoteData>& remoteData) : _remoteData(remoteData), running(false) {
-//     _isConnected = false;
-// }
-// RemoteController::~RemoteController() {
-//     stop();
-// }
-// //------------------------------------------------------------------------------------
-// void RemoteController::start() {
-//     if (!running.load()) {
-//         running.store(true);
-//         moduleThread = std::thread(&RemoteController::runLoop, this);
-//     }
-// }
-// void RemoteController::stop() {
-//     if (running.load()) {
-//         running.store(false);
-//         if (moduleThread.joinable()) {
-//             moduleThread.join();
-//         }
-//     }
-// }
-// //------------------------------------------------------------------------------------
-// void RemoteController::runLoop() {
-//     Command command = {0.0f, 0.0f, 0.0f, 0.0f, false};
+RemoteController::RemoteController(Config& cfg) : m_cfg(std::move(cfg)) {}
 
-//     startConnection();
+RemoteController::~RemoteController() {}
 
-//     while (running.load()) {
-//         _clientSocket = accept(_serverSocket, nullptr, nullptr);
-//         if (_clientSocket < 0) {
-//             perror("Client connection failed");
-//             continue;
-//         }
+//------------------------------------------------------------------------------------
+bool RemoteController::Initialize() {
+    if (!m_cfg.m_rc_input) {
+        spdlog::debug("[RemoteController] Warning: no RC adapter injected; using simulated RC");
+    }
+    return true;
+}
+//------------------------------------------------------------------------------------
+void RemoteController::StepRC() {
+    const auto period = std::chrono::milliseconds(1000 / std::max<uint32_t>(1, m_cfg.m_loop_hz));
+    RemoteData r;
+    if (ReadOnce(r) && m_callback) {
+        m_callback(r);
+    }
+    std::this_thread::sleep_for(period);
+}
+//------------------------------------------------------------------------------------
+void RemoteController::SetRemoteCallback(RemoteCallback cb) {
+    m_callback = std::move(cb);
+}
 
-//         char buffer[BUFFER_SIZE] = {0};
-//         int  bytes_read          = recv(_clientSocket, buffer, sizeof(buffer) - 1, 0);
-//         if (bytes_read > 0) {
-//             buffer[bytes_read] = '\0';
-//             std::cout << "Received command: " << buffer << std::endl;
+bool RemoteController::ReadOnce(RemoteData& out) {
+    if (m_cfg.m_rc_input) {
+        std::vector<float> channels;
+        if (!m_cfg.m_rc_input->ReadChannels(channels)) {
+            return false;
+        }
+        out = MapChannelsToRemote(channels);
+    }
+    else {
+        // simulated neutral RC
+        out.m_throttle     = 0.0F;
+        out.m_roll         = 0.0F;
+        out.m_pitch        = 0.0F;
+        out.m_yaw          = 0.0F;
+        out.m_mode_switch  = false;
+        out.m_kill_switch  = false;
+        out.m_is_connected = true;
+    }
+    out.m_timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    return true;
+}
 
-//             // Process commands
-//             command = processCommand(buffer);
-
-//             if (_statusToSend) {
-//                 std::string response = "Drone status: Operational\n";
-//                 send(_clientSocket, response.c_str(), static_cast<int>(response.length()), 0);
-//             }
-//         }
-//         std::this_thread::sleep_for(std::chrono::milliseconds(REMOTE_INTERVAL_CHECK_MS));
-//         std::cout << "RemoteController running..." << std::endl;
-//     }
-//     stopConnection();
-// }
-// //------------------------------------------------------------------------------------
-// void RemoteController::startConnection() {
-//     // Create Unix domain socket
-//     _serverSocket = socket(AF_UNIX, SOCK_STREAM, 0);
-//     if (_serverSocket < 0) {
-//         perror("Socket creation failed");
-//         return;
-//     }
-
-//     // Address
-//     _serverAddress.sin_family      = AF_INET;
-//     _serverAddress.sin_port        = htons(8080);
-//     _serverAddress.sin_addr.s_addr = INADDR_ANY;
-
-//     // Bind the socket
-//     if (bind(_serverSocket, (struct sockaddr*)&_serverAddress, sizeof(_serverAddress)) < 0) {
-//         std::cerr << "Socket bind failed: " << std::endl;
-//         return;
-//     }
-
-//     // Start listening
-//     if (listen(_serverSocket, 5) < 0) {
-//         std::cerr << "Socket listen failed: " << std::endl;
-//         return;
-//     }
-
-//     std::cout << "Drone server started, waiting for commands..." << std::endl;
-// }
-// void RemoteController::stopConnection() {
-//     if (_serverSocket > 0 && _clientSocket > 0) {
-
-//         close(_clientSocket);
-//         close(_serverSocket);
-//         std::cout << "Drone connection (server) stopped." << std::endl;
-//     }
-// }
-// RemoteController::Command RemoteController::processCommand(const std::string& command) {
-//     Command cmd = {0.0f, 0.0f, 0.0f, 0.0f, false};
-
-//     // Parse the command string
-//     if (command.find("throttle") != std::string::npos) {
-//         cmd.throttle = std::stof(command.substr(command.find("=") + 1));
-//     }
-//     if (command.find("yaw") != std::string::npos) {
-//         cmd.yaw = std::stof(command.substr(command.find("=") + 1));
-//     }
-//     if (command.find("pitch") != std::string::npos) {
-//         cmd.pitch = std::stof(command.substr(command.find("=") + 1));
-//     }
-//     if (command.find("roll") != std::string::npos) {
-//         cmd.roll = std::stof(command.substr(command.find("=") + 1));
-//     }
-//     if (command.find("releasePayload") != std::string::npos) {
-//         cmd.releasePayload = command.find("true") != std::string::npos;
-//     }
-//     return cmd;
-// }
+RemoteData RemoteController::MapChannelsToRemote(const std::vector<float>& channels) {
+    RemoteData r;
+    // Expect channels: throttle, aileron, elevator, rudder, switches...
+    if (channels.size() >= 4) {
+        r.m_throttle     = channels[0];
+        r.m_roll         = channels[1];
+        r.m_pitch        = channels[2];
+        r.m_yaw          = channels[3];
+        r.m_is_connected = true;
+    }
+    else {
+        r.m_is_connected = false;
+    }
+    // map additional channels to switches if present
+    if (channels.size() >= 5) {
+        r.m_mode_switch = channels[4] > 0.5f;
+    }
+    if (channels.size() >= 6) {
+        r.m_kill_switch = channels[5] > 0.5f;
+    }
+    return r;
+}

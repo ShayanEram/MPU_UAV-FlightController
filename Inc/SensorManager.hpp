@@ -27,7 +27,7 @@ class SensorManager {
         uint8_t m_hmc_addr{0x1E};
         uint8_t m_airspeed_addr{0x28}; // example
     };
-    explicit SensorManager();
+    explicit SensorManager(const Config& cfg);
     ~SensorManager();
 
     explicit SensorManager(const SensorManager& rhs)   = delete;
@@ -75,4 +75,7 @@ class SensorManager {
 
     static constexpr auto SENSOR_READ_FREQ = 100;
     static constexpr auto AHRS_TUNINGS     = 0.12F;
+    static constexpr auto BUFFER_SIZE      = 1024;
+    static constexpr auto GPS_BAUD_RATE    = 38400;
+    static constexpr auto LIDAR_BAUD_RATE  = 115200;
 };

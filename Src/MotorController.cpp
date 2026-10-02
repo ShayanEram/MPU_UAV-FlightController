@@ -1,156 +1,143 @@
-// #include "MotorController.hpp"
+#include "MotorController.hpp"
 
-// MotorController::MotorController(SharedResource<MotorData>& motorData) : _motorData(motorData), running(false) {
-//     _currentSpeed = 0;
-//     _pitchSpeed   = 0;
-//     _rollSpeed    = 0;
-//     _yawSpeed     = 0;
-// }
-// MotorController::~MotorController() {
-//     stop();
-// }
-// //------------------------------------------------------------------------------------
-// void MotorController::start() {
-//     if (!running.load()) {
-//         running.store(true);
-//         moduleThread = std::thread(&MotorController::runLoop, this);
-//     }
-// }
-// void MotorController::stop() {
-//     if (running.load()) {
-//         running.store(false);
-//         if (moduleThread.joinable()) {
-//             moduleThread.join();
-//         }
-//     }
-// }
-// //------------------------------------------------------------------------------------
-// void MotorController::runLoop() {
-//     while (running.load()) {
+#include <spdlog/spdlog.h>
 
-//         auto startTime = std::chrono::high_resolution_clock::now();
+MotorController::MotorController(Config& cfg) : m_cfg(std::move(cfg)) {
+    m_last_apply_time = std::chrono::steady_clock::now();
+}
 
-//         MotorDirection direction; // = getUpdatedMotorDirection();
-//         setMotorDirection(direction);
+MotorController::~MotorController() {
+    spdlog::debug("MotorController stopped!");
+}
+//------------------------------------------------------------------------------------
+bool MotorController::Initialize() {
+    if (!m_cfg.m_pwm) {
+        spdlog::error("[MotorController] Error: no PWM adapter injected");
+        return false;
+    }
+    // Ensure outputs are at safe neutral on init
+    SetFailsafe();
+    return true;
+}
+//------------------------------------------------------------------------------------
+bool MotorController::StepMC(const MotorData& out) {
+    std::scoped_lock lk(m_apply_mutex);
+    if (!m_cfg.m_pwm) {
+        return false;
+    }
 
-//         // Monitor Motor Status
-//         for (auto motorId : {MotorID::MOTOR_1, MotorID::MOTOR_2, MotorID::MOTOR_3, MotorID::MOTOR_4}) {
-//             int rpm = getMotorStatus(motorId);
-//             std::cout << "Motor " << static_cast<int>(motorId) << " RPM: " << rpm << std::endl;
+    // Throttle ramping
+    auto  now         = std::chrono::steady_clock::now();
+    float dt          = std::chrono::duration<float>(now - m_last_apply_time).count();
+    m_last_apply_time = now;
 
-//             // Fail-safe trigger if needed
-//             if (rpm < 0) {
-//                 handleFailSafe();
-//                 return;
-//             }
-//         }
+    float desired_throttle = out.m_motor_throttle;
+    desired_throttle       = std::max(0.0f, std::min(1.0f, desired_throttle));
 
-//         std::cout << "MotorController running... Speed: " << _currentSpeed << std::endl;
+    // If not armed, force throttle to zero
+    if (!m_armed.load()) {
+        desired_throttle = 0.0F;
+    }
 
-//         // Sleep to maintain control loop frequency (~100Hz)
-//         auto endTime     = std::chrono::high_resolution_clock::now();
-//         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-//         std::this_thread::sleep_for(std::chrono::milliseconds(10) - elapsedTime);
-//     }
-// }
-// //------------------------------------------------------------------------------------
-// void MotorController::setMotorDirection(const MotorDirection& direction) {
-//     std::cout << "[Motor Control] Setting direction:" << std::endl;
+    // Ramp limit
+    float max_delta = m_cfg.m_throttle_ramp_rate * dt;
+    float last      = m_last_throttle.load();
+    float delta     = desired_throttle - last;
+    if (std::fabs(delta) > max_delta) {
+        desired_throttle = last + (delta > 0 ? max_delta : -max_delta);
+    }
+    m_last_throttle = desired_throttle;
 
-//     // Adjust yaw (Rotation)
-//     if (direction.yaw == YawDirection::LEFT) {
-//         setMotorSpeed(MotorID::MOTOR_1, -_yawSpeed);
-//         setMotorSpeed(MotorID::MOTOR_3, _yawSpeed);
-//     }
-//     else if (direction.yaw == YawDirection::RIGHT) {
-//         setMotorSpeed(MotorID::MOTOR_1, _yawSpeed);
-//         setMotorSpeed(MotorID::MOTOR_3, -_yawSpeed);
-//     }
+    // Map to pulses
+    uint16_t motor_pulse = ThrottleToPulse(desired_throttle);
+    uint16_t a_pulse     = ServoToPulse(out.m_servo_aileron);
+    uint16_t e_pulse     = ServoToPulse(out.m_servo_elevator);
+    uint16_t r_pulse     = ServoToPulse(out.m_servo_rudder);
 
-//     // Adjust pitch (Forward/Backward)
-//     if (direction.pitch == PitchDirection::FORWARD) {
-//         setMotorSpeed(MotorID::MOTOR_1, _pitchSpeed);
-//         setMotorSpeed(MotorID::MOTOR_2, _pitchSpeed);
-//     }
-//     else if (direction.pitch == PitchDirection::BACKWARD) {
-//         setMotorSpeed(MotorID::MOTOR_1, -_pitchSpeed);
-//         setMotorSpeed(MotorID::MOTOR_2, -_pitchSpeed);
-//     }
+    // Clamp pulses
+    auto clamp = [](uint16_t v, uint16_t lo, uint16_t hi) -> uint16_t {
+        if (v < lo) {
+            return lo;
+        }
+        if (v > hi) {
+            return hi;
+        }
+        return v;
+    };
 
-//     // Adjust roll (Left/Right)
-//     if (direction.roll == RollDirection::LEFT) {
-//         setMotorSpeed(MotorID::MOTOR_2, _rollSpeed);
-//         setMotorSpeed(MotorID::MOTOR_4, -_rollSpeed);
-//     }
-//     else if (direction.roll == RollDirection::RIGHT) {
-//         setMotorSpeed(MotorID::MOTOR_2, -_rollSpeed);
-//         setMotorSpeed(MotorID::MOTOR_4, _rollSpeed);
-//     }
+    motor_pulse = clamp(motor_pulse, m_cfg.m_motor_min_us, m_cfg.m_motor_max_us);
+    a_pulse     = clamp(a_pulse, m_cfg.m_servo_min_us, m_cfg.m_servo_max_us);
+    e_pulse     = clamp(e_pulse, m_cfg.m_servo_min_us, m_cfg.m_servo_max_us);
+    r_pulse     = clamp(r_pulse, m_cfg.m_servo_min_us, m_cfg.m_servo_max_us);
 
-//     std::cout << "Yaw: " << static_cast<int>(direction.yaw) << ", Pitch: " << static_cast<int>(direction.pitch)
-//               << ", Roll: " << static_cast<int>(direction.roll) << std::endl;
-// }
+    // Apply pulses
+    if (!m_cfg.m_pwm->SetPulseWidth(m_cfg.m_motor_channel, motor_pulse)) {
+        return false;
+    }
+    if (!m_cfg.m_pwm->SetPulseWidth(m_cfg.m_aileron_channel, a_pulse)) {
+        return false;
+    }
+    if (!m_cfg.m_pwm->SetPulseWidth(m_cfg.m_elevator_channel, e_pulse)) {
+        return false;
+    }
+    if (!m_cfg.m_pwm->SetPulseWidth(m_cfg.m_rudder_channel, r_pulse)) {
+        return false;
+    }
 
-// int MotorController::setMotorSpeed(const MotorID& id, float throttle) {
-//     int dutyCyle = static_cast<int>(throttle * 20000);
-//     if (dutyCyle < MIN_SPEED) {
-//         dutyCyle = MIN_SPEED;
-//     }
-//     else if (dutyCyle > MAX_SPEED) {
-//         dutyCyle = MAX_SPEED;
-//     }
+    return true;
+}
+//------------------------------------------------------------------------------------
+bool MotorController::Arm() {
+    // require explicit conditions if configured (caller should check RC switch, etc.)
+    m_armed = true;
+    // ensure motor starts at zero throttle
+    m_last_throttle = 0.0F;
+    // apply zero throttle immediately
+    MotorData m;
+    m.m_motor_throttle = 0.0F;
+    m.m_servo_aileron  = 0.0F;
+    m.m_servo_elevator = 0.0F;
+    m.m_servo_rudder   = 0.0F;
+    StepMC(m);
+    spdlog::debug("[MotorController] Armed");
+    return true;
+}
 
-//     std::string dutyCyclePath = PWM_DUTY_CYCLE_PATH + std::to_string(static_cast<int>(id));
-//     writeHardware(dutyCyclePath, dutyCyle);
+bool MotorController::Disarm() {
+    m_armed = false;
+    SetFailsafe();
+    spdlog::debug("[MotorController] Disarmed");
+    return true;
+}
 
-//     _currentSpeed = dutyCyle;
+bool MotorController::IsArmed() const {
+    return m_armed.load();
+}
 
-//     return dutyCyle;
-// }
+uint16_t MotorController::ThrottleToPulse(float t) const {
+    float tt = std::max(0.0F, std::min(1.0F, t));
+    return static_cast<uint16_t>(static_cast<float>(m_cfg.m_motor_min_us) +
+                                 (tt * (static_cast<float>(m_cfg.m_motor_max_us) - static_cast<float>(m_cfg.m_motor_min_us))));
+}
 
-// void MotorController::stopMotors() {
-//     for (auto motorId : {MotorID::MOTOR_1, MotorID::MOTOR_2, MotorID::MOTOR_3, MotorID::MOTOR_4}) {
-//         setMotorSpeed(motorId, 0);
-//     }
-//     std::cout << "Motors stopped." << std::endl;
-// }
+uint16_t MotorController::ServoToPulse(float s) const {
+    float ss         = std::max(-1.0F, std::min(1.0F, s));
+    auto  mid        = static_cast<uint16_t>((m_cfg.m_servo_min_us + m_cfg.m_servo_max_us) / 2);
+    auto  half_range = static_cast<uint16_t>((m_cfg.m_servo_max_us - m_cfg.m_servo_min_us) / 2);
+    return static_cast<uint16_t>(static_cast<float>(mid) + (ss * static_cast<float>(half_range)));
+}
 
-// int MotorController::getMotorStatus(const MotorID& id) const {
-//     std::fstream fileStream(I2C_DEVICE_PATH, std::ios::in | std::ios::out);
-//     if (!fileStream.is_open()) {
-//         std::cerr << "Failed to open I2C device: " << I2C_DEVICE_PATH << std::endl;
-//         return -1; // or handle error appropriately
-//     }
-
-//     char buffer[12] = {0x00};
-//     fileStream.write(buffer, sizeof(buffer));
-//     fileStream.read(buffer, sizeof(buffer));
-//     fileStream.close();
-
-//     int rpm = buffer[0] << 8 | buffer[1];
-
-//     return (rpm > 0) ? rpm : -1;
-// }
-
-// void MotorController::handleFailSafe() {
-//     stopMotors();
-// }
-
-// void MotorController::enableMotors() {
-//     writeHardware(PWM_ENABLE_PATH, 1);
-// }
-
-// void MotorController::setMPwmPeriod(int period) {
-//     writeHardware(PWM_PERIOD_PATH, period);
-// }
-
-// void MotorController::writeHardware(const std::string& path, int value) {
-//     std::ofstream file(path);
-//     if (file.is_open()) {
-//         file << value;
-//         file.close();
-//     }
-//     else {
-//         std::cerr << "Failed to open file: " << path << std::endl;
-//     }
-// }
+void MotorController::SetFailsafe() {
+    std::scoped_lock lk(m_apply_mutex);
+    if (!m_cfg.m_pwm) {
+        return;
+    }
+    // motor zero throttle and neutral servos
+    uint16_t m_motor_pulse = ThrottleToPulse(0.0F);
+    uint16_t neutral       = ServoToPulse(0.0F);
+    m_cfg.m_pwm->SetPulseWidth(m_cfg.m_motor_channel, m_motor_pulse);
+    m_cfg.m_pwm->SetPulseWidth(m_cfg.m_aileron_channel, neutral);
+    m_cfg.m_pwm->SetPulseWidth(m_cfg.m_elevator_channel, neutral);
+    m_cfg.m_pwm->SetPulseWidth(m_cfg.m_rudder_channel, neutral);
+    m_last_throttle = 0.0F;
+}

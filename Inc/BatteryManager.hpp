@@ -18,7 +18,7 @@ class BatteryManager {
         uint32_t                 m_loop_hz{2};
     };
 
-    explicit BatteryManager(const Config& cfg);
+    explicit BatteryManager(Config& cfg);
     ~BatteryManager();
 
     explicit BatteryManager(const BatteryManager& rhs)   = delete;
@@ -31,7 +31,7 @@ class BatteryManager {
     bool ReadOnce(BatteryData& out);
 
   private:
-    bool StepBM();
+    void StepBM();
 
     Config          m_cfg;
     BatteryCallback m_callback;
