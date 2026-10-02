@@ -4,9 +4,7 @@
  * @brief Header file for the BatteryManager class.
  * The ESC manager.
  */
-#include <atomic>
 #include <memory>
-#include <thread>
 
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"

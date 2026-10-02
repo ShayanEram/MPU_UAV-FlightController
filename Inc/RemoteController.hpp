@@ -9,10 +9,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <atomic>
 #include <cstring>
 #include <memory>
-#include <thread>
 
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"

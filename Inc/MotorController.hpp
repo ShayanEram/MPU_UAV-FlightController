@@ -8,9 +8,8 @@
 #include <fcntl.h>
 
 #include <atomic>
+#include <chrono>
 #include <memory>
-#include <string>
-#include <thread>
 
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
