@@ -9,6 +9,7 @@
 
 #include <deque>
 #include <memory>
+#include <thread>
 
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"

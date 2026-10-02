@@ -13,7 +13,10 @@
         "-DENABLE_CONVERGAE: BOOL=TRUE"
     ],
     "clangd.arguments": [
-        "--compile-commands-dir=build/build"
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--background-index",
+        "--query-driver=/usr/bin/c++,/usr/bin/g++",
+        "--header-insertion=never"
     ],
     "editor.rulers": [
         {

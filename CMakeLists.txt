@@ -27,7 +27,9 @@ add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/Inc
-    ${CMAKE_SOURCE_DIR}/Inc/Utils
+    ${CMAKE_SOURCE_DIR}/Inc/Hardware_Interface
+    ${CMAKE_SOURCE_DIR}/Inc/Hardware_Interface/third_party
+    ${mavlink_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

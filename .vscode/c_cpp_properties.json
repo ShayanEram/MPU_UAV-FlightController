@@ -4,17 +4,17 @@
       "name": "Linux",
       "includePath": [
         "${workspaceFolder}/Inc",
-        "${workspaceFolder}/Inc/Utils",
+        "${workspaceFolder}/Inc/Hardware_Interface",
         "${workspaceFolder}/Src",
-        "${workspaceFolder}/build/Debug"
+        "${workspaceFolder}/build/"
       ],
       "defines": [],
       "compilerPath": "/usr/bin/g++",
       "cStandard": "c17",
       "cppStandard": "c++23",
       "intelliSenseMode": "linux-gcc-x64",
-      "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json"
     }
   ],
-  "version": 4
+    "version": 4
 }
