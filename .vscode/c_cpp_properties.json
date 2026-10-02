@@ -6,7 +6,8 @@
         "${workspaceFolder}/Inc",
         "${workspaceFolder}/Inc/Hardware_Interface",
         "${workspaceFolder}/Src",
-        "${workspaceFolder}/build/"
+        "${workspaceFolder}/build/",
+        "${workspaceFolder}/Inc/Hardware_Interface/third_party/c_library_v2"
       ],
       "defines": [],
       "compilerPath": "/usr/bin/g++",
