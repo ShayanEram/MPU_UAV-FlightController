@@ -43,9 +43,9 @@ class SensorManager {
     // Single-shot synchronous read
     bool ReadOnce(SensorData& out);
 
-  private:
     void StepSm();
 
+  private:
     // low-level readers
     void ReadImu(SensorData& s);
     void ReadBaro(SensorData& s);

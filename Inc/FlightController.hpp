@@ -38,9 +38,9 @@ class FlightController {
     // request current motor outputs
     [[nodiscard]] MotorData GetMotorData() const;
 
-  private:
     void StepFC();
 
+  private:
     Config m_cfg;
 
     // internal state

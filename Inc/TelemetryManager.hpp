@@ -36,9 +36,9 @@ class TelemetryManagerMavlink {
     // push telemetry packet to be sent (thread-safe)
     void Send(const TelemetryPacket& pkt);
 
-  private:
     void StepTM();
 
+  private:
     void SendHeartbeat();
     void SendAttitude(const SensorData& s);
     void SendGlobalPosition(const SensorData& s);

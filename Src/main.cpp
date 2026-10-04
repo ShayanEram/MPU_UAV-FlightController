@@ -110,23 +110,19 @@ int main() {
         telem->Send(p);
     });
 
-    // Start
-    // sensorMgr->start();
-    // battMgr->start();
-    // rc->start();
-    // telem->send(pkt);
-    // fc->start();
+    // Run (to use rtos lib TODO)
+    spdlog::info("Raspberry Pi UAV stack running.");
 
-    spdlog::info("Raspberry Pi UAV stack running. Press Enter to stop.");
-    // std::string dummy;
-    // std::getline(std::cin, dummy);
+    int counter = 0;
+    while (counter < 10) {
+        sensor_mgr->StepSm();
+        batt_mgr->StepBM();
+        rc->StepRC();
+        telem->StepTM();
+        fc->StepFC();
 
-    // Stop
-    // sensorMgr->stop();
-    // battMgr->stop();
-    // rc->stop();
-    // telem->stop();
-    // fc->stop();
+        counter++;
+    }
 
     spdlog::info("Stopped.");
     return 0;

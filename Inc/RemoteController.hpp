@@ -37,8 +37,9 @@ class RemoteController {
     void SetRemoteCallback(RemoteCallback cb);
     bool ReadOnce(RemoteData& out);
 
+    void StepRC();
+
   private:
-    void       StepRC();
     RemoteData MapChannelsToRemote(const std::vector<float>& channels);
 
     Config         m_cfg;
