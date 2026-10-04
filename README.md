@@ -1,4 +1,4 @@
-# MPU Unmanned Aerial Vehicle
+# UAV Flight Controller
 
 This project implements the software for an **Unmanned Aerial Vehicle (UAV)**, focusing on modularity, thread-safe communication, and real-time control. The system is designed to manage various components such as the flight controller, payload manager, sensor manager, and telemetry systems.
 

@@ -4,3 +4,6 @@
 [submodule "AeroLib/AeroRTOS/Lib_AeroRTOS"]
 	path = AeroLib/AeroRTOS/Lib_AeroRTOS
 	url = https://github.com/ShayanEram/LIB_AeroRTOS.git
+[submodule "AeroLib/AeroCOM/Lib_AeroCOM"]
+	path = AeroLib/AeroCOM/Lib_AeroCOM
+	url = https://github.com/ShayanEram/LIB_AeroCOM.git
