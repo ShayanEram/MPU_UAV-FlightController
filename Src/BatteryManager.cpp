@@ -33,21 +33,21 @@ bool BatteryManager::ReadOnce(BatteryData& out) {
         float v = 0.0F;
         float a = 0.0F;
         if (m_cfg.m_adc->ReadVoltage(v)) {
-            out.m_voltage = v;
+            out.voltage = v;
         }
         if (m_cfg.m_adc->ReadCurrent(a)) {
-            out.m_current = a;
+            out.current = a;
         }
     }
     else {
         // simulated
-        out.m_voltage = 11.1F;
-        out.m_current = 1.2F;
+        out.voltage = 11.1F;
+        out.current = 1.2F;
     }
     // simple SOC estimate
-    out.m_remaining_pct = std::max(0.0F, std::min(100.0F, (out.m_voltage - 9.0F) / (12.6F - 9.0F) * 100.0F));
-    out.m_is_low        = out.m_remaining_pct < m_cfg.m_low_threshold_pct;
-    out.m_is_critical   = out.m_remaining_pct < m_cfg.m_critical_threshold_pct;
-    out.m_timestamp_ms  = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    out.remaining_pct = std::max(0.0F, std::min(100.0F, (out.voltage - 9.0F) / (12.6F - 9.0F) * 100.0F));
+    out.is_low        = out.remaining_pct < m_cfg.m_low_threshold_pct;
+    out.is_critical   = out.remaining_pct < m_cfg.m_critical_threshold_pct;
+    out.timestamp_ms  = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     return true;
 }

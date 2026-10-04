@@ -71,17 +71,17 @@ void SensorManager::StepSm() {
     }
     m_last_ahrs_time = now;
 
-    m_ahrs.Update(s.m_gyro_x, s.m_gyro_y, s.m_gyro_z, s.m_accel_x, s.m_accel_y, s.m_accel_z, m_mag_z, m_mag_y, m_mag_z, dt);
+    m_ahrs.Update(s.gyro_x, s.gyro_y, s.gyro_z, s.accel_x, s.accel_y, s.accel_z, m_mag_z, m_mag_y, m_mag_z, dt);
 
     float roll  = NAN;
     float pitch = NAN;
     float yaw   = NAN;
     m_ahrs.GetEuler(roll, pitch, yaw);
-    s.m_roll  = roll;
-    s.m_pitch = pitch;
-    s.m_yaw   = yaw;
+    s.roll  = roll;
+    s.pitch = pitch;
+    s.yaw   = yaw;
 
-    s.m_timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    s.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     // callback
     {
@@ -116,18 +116,17 @@ bool SensorManager::ReadOnce(SensorData& out) {
     m_last_ahrs_time = now;
 
     // gyro expected in rad/s; ensure readImu sets that
-    m_ahrs.Update(out.m_gyro_x, out.m_gyro_y, out.m_gyro_z, out.m_accel_x, out.m_accel_y, out.m_accel_z, m_mag_x, m_mag_y,
-                  m_mag_z, dt);
+    m_ahrs.Update(out.gyro_x, out.gyro_y, out.gyro_z, out.accel_x, out.accel_y, out.accel_z, m_mag_x, m_mag_y, m_mag_z, dt);
 
     float roll  = NAN;
     float pitch = NAN;
     float yaw   = NAN;
     m_ahrs.GetEuler(roll, pitch, yaw);
-    out.m_roll  = roll;
-    out.m_pitch = pitch;
-    out.m_yaw   = yaw;
+    out.roll  = roll;
+    out.pitch = pitch;
+    out.yaw   = yaw;
 
-    out.m_timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    out.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     return true;
 }
 
@@ -150,25 +149,25 @@ bool SensorManager::WriteI2CRegister(uint8_t addr, uint8_t reg, const uint8_t* b
 void SensorManager::ReadImu(SensorData& s) {
     // Default simulated values if no I2C
     if (!m_cfg.m_i2c) {
-        s.m_accel_x = 0.0f;
-        s.m_accel_y = 0.0f;
-        s.m_accel_z = -9.80665f;
-        s.m_gyro_x = s.m_gyro_y = s.m_gyro_z = 0.0f;
-        s.m_health.m_imu_healthy             = true;
+        s.accel_x = 0.0f;
+        s.accel_y = 0.0f;
+        s.accel_z = -9.80665f;
+        s.gyro_x = s.gyro_y = s.gyro_z = 0.0f;
+        s.health.imu_healthy           = true;
         return;
     }
 
     // WHO_AM_I check
     uint8_t who = 0;
     if (!ReadI2CRegister(m_cfg.m_icm_addr, 0x75, &who, 1)) {
-        s.m_health.m_imu_healthy = false;
+        s.health.imu_healthy = false;
         return;
     }
 
     // Read accel/gyro registers (ACCEL_XOUT_H = 0x3B, 14 bytes)
-    uint8_t buf[14];
-    if (!ReadI2CRegister(m_cfg.m_icm_addr, 0x3B, buf, 14)) {
-        s.m_health.m_imu_healthy = false;
+    std::array<uint8_t, 14> buf{};
+    if (!ReadI2CRegister(m_cfg.m_icm_addr, 0x3B, buf.data(), 14)) {
+        s.health.imu_healthy = false;
         return;
     }
 
@@ -185,24 +184,24 @@ void SensorManager::ReadImu(SensorData& s) {
     const float accelScale = 2.0f / 32768.0f * 9.80665f;          // m/s^2
     const float gyroScale  = 250.0f / 32768.0f * (M_PI / 180.0f); // rad/s
 
-    s.m_accel_x = ax * accelScale;
-    s.m_accel_y = ay * accelScale;
-    s.m_accel_z = az * accelScale;
+    s.accel_x = ax * accelScale;
+    s.accel_y = ay * accelScale;
+    s.accel_z = az * accelScale;
 
-    s.m_gyro_x = gx * gyroScale;
-    s.m_gyro_y = gy * gyroScale;
-    s.m_gyro_z = gz * gyroScale;
+    s.gyro_x = gx * gyroScale;
+    s.gyro_y = gy * gyroScale;
+    s.gyro_z = gz * gyroScale;
 
-    s.m_health.m_imu_healthy = true;
+    s.health.imu_healthy = true;
 }
 
 /* Barometer: MS5611 */
 void SensorManager::ReadBaro(SensorData& s) {
     if (!m_cfg.m_i2c) {
-        s.m_pressure              = 1013.25f;
-        s.m_altitude_baro         = 100.0f;
-        s.m_temperature           = 20.0f;
-        s.m_health.m_baro_healthy = true;
+        s.pressure            = 1013.25f;
+        s.altitude_baro       = 100.0f;
+        s.temperature         = 20.0f;
+        s.health.baro_healthy = true;
         return;
     }
 
@@ -213,23 +212,23 @@ void SensorManager::ReadBaro(SensorData& s) {
     std::this_thread::sleep_for(std::chrono::milliseconds(3));
 
     // Read PROM coefficients
-    uint16_t C[7] = {0};
+    std::array<uint16_t, 7> C = {0};
     for (int i = 0; i < 6; ++i) {
-        uint8_t buf[2];
-        if (!ReadI2CRegister(m_cfg.m_ms5611_addr, 0xA2 + i * 2, buf, 2)) {
-            s.m_health.m_baro_healthy = false;
+        std::array<uint8_t, 2> buf{};
+        if (!ReadI2CRegister(m_cfg.m_ms5611_addr, 0xA2 + i * 2, buf.data(), 2)) {
+            s.health.baro_healthy = false;
             return;
         }
         C[i + 1] = (buf[0] << 8) | buf[1];
     }
 
-    // D1 (m_pressure)
+    // D1 (pressure)
     uint8_t cmdD1 = 0x48; // OSR=4096
     WriteI2CRegister(m_cfg.m_ms5611_addr, cmdD1, nullptr, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint8_t d1buf[3];
     if (!ReadI2CRegister(m_cfg.m_ms5611_addr, 0x00, d1buf, 3)) {
-        s.m_health.m_baro_healthy = false;
+        s.health.baro_healthy = false;
         return;
     }
     uint32_t D1 = (d1buf[0] << 16) | (d1buf[1] << 8) | d1buf[2];
@@ -240,7 +239,7 @@ void SensorManager::ReadBaro(SensorData& s) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint8_t d2buf[3];
     if (!ReadI2CRegister(m_cfg.m_ms5611_addr, 0x00, d2buf, 3)) {
-        s.m_health.m_baro_healthy = false;
+        s.health.baro_healthy = false;
         return;
     }
     uint32_t D2 = (d2buf[0] << 16) | (d2buf[1] << 8) | d2buf[2];
@@ -252,21 +251,21 @@ void SensorManager::ReadBaro(SensorData& s) {
     int64_t SENS = (static_cast<int64_t>(C[1]) << 15) + ((static_cast<int64_t>(C[3]) * dT) >> 8);
     int64_t P    = (((static_cast<int64_t>(D1) * SENS) >> 21) - OFF) >> 15;
 
-    s.m_temperature = TEMP / 100.0f;
-    s.m_pressure    = P / 100.0f; // mbar
+    s.temperature = TEMP / 100.0f;
+    s.pressure    = P / 100.0f; // mbar
 
     // approximate altitude (ISA)
     const float seaLevelPressure = 1013.25f;
-    s.m_altitude_baro            = 44330.0f * (1.0f - powf(s.m_pressure / seaLevelPressure, 0.1903f));
+    s.altitude_baro              = 44330.0f * (1.0f - powf(s.pressure / seaLevelPressure, 0.1903f));
 
-    s.m_health.m_baro_healthy = true;
+    s.health.baro_healthy = true;
 }
 
 /* Compass: HMC5883L */
 void SensorManager::ReadCompass(SensorData& s) {
     if (!m_cfg.m_i2c) {
         m_mag_x = m_mag_y = m_mag_z = 0.0f;
-        s.m_heading                 = 0.0f;
+        s.heading                   = 0.0f;
         return;
     }
 
@@ -276,36 +275,36 @@ void SensorManager::ReadCompass(SensorData& s) {
 
     uint8_t buf[6];
     if (!ReadI2CRegister(m_cfg.m_hmc_addr, 0x03, buf, 6)) {
-        s.m_health.m_gps_fix = s.m_health.m_gps_fix; // no-op
+        s.health.gps_fix = s.health.gps_fix; // no-op
         return;
     }
 
-    int16_t mx = static_cast<int16_t>((buf[0] << 8) | buf[1]);
-    int16_t my = static_cast<int16_t>((buf[4] << 8) | buf[5]); // note axis order
-    int16_t mz = static_cast<int16_t>((buf[2] << 8) | buf[3]);
+    auto mx = static_cast<int16_t>((buf[0] << 8) | buf[1]);
+    auto my = static_cast<int16_t>((buf[4] << 8) | buf[5]); // note axis order
+    auto mz = static_cast<int16_t>((buf[2] << 8) | buf[3]);
 
     // store raw magnetometer for AHRS
     m_mag_x = static_cast<float>(mx);
     m_mag_y = static_cast<float>(my);
     m_mag_z = static_cast<float>(mz);
 
-    // compute m_heading (simple)
-    float m_heading = atan2f(m_mag_y, m_mag_x) * 180.0f / M_PI;
-    if (m_heading < 0)
-        m_heading += 360.0f;
-    s.m_heading = m_heading;
+    // compute heading (simple)
+    float heading = atan2f(m_mag_y, m_mag_x) * 180.0f / M_PI;
+    if (heading < 0)
+        heading += 360.0f;
+    s.heading = heading;
 }
 
 /* GPS: Ublox NAV-PVT parsing (basic) */
 void SensorManager::ReadGps(SensorData& s) {
     if (!m_cfg.m_gps_uart) {
         // simulated
-        s.m_latitude         = 45.5;
-        s.m_longitude        = -73.6;
-        s.m_altitude_gps     = 100.0f;
-        s.m_ground_speed     = 0.0f;
-        s.m_gps_satellites   = 8;
-        s.m_health.m_gps_fix = true;
+        s.latitude       = 45.5;
+        s.longitude      = -73.6;
+        s.altitude_gps   = 100.0f;
+        s.ground_speed   = 0.0f;
+        s.gps_satellites = 8;
+        s.health.gps_fix = true;
         return;
     }
 
@@ -325,8 +324,9 @@ void SensorManager::ReadGps(SensorData& s) {
             ++i;
             continue;
         }
-        if (i + 6 > m_gps_buf.size())
+        if (i + 6 > m_gps_buf.size()) {
             break;
+        }
         uint8_t  cls = m_gps_buf[i + 2];
         uint8_t  id  = m_gps_buf[i + 3];
         uint16_t len = static_cast<uint16_t>(m_gps_buf[i + 4]) | (static_cast<uint16_t>(m_gps_buf[i + 5]) << 8);
@@ -353,31 +353,32 @@ void SensorManager::ReadGps(SensorData& s) {
                 auto lon    = static_cast<int32_t>(payload[28] | (payload[29] << 8) | (payload[30] << 16) | (payload[31] << 24));
                 auto height = static_cast<int32_t>(payload[32] | (payload[33] << 8) | (payload[34] << 16) | (payload[35] << 24));
                 auto gSpeed = static_cast<int32_t>(payload[60] | (payload[61] << 8) | (payload[62] << 16) | (payload[63] << 24));
-                uint8_t numSV        = payload[23];
-                s.m_latitude         = lat * 1e-7;
-                s.m_longitude        = lon * 1e-7;
-                s.m_altitude_gps     = height / 1000.0f;
-                s.m_ground_speed     = gSpeed / 1000.0f;
-                s.m_gps_satellites   = numSV;
-                s.m_health.m_gps_fix = true;
+                uint8_t numSV    = payload[23];
+                s.latitude       = lat * 1e-7;
+                s.longitude      = lon * 1e-7;
+                s.altitude_gps   = height / 1000.0f;
+                s.ground_speed   = gSpeed / 1000.0f;
+                s.gps_satellites = numSV;
+                s.health.gps_fix = true;
             }
         }
         // advance past this packet
         i += 6 + len + 2;
     }
     // erase consumed bytes
-    if (i > 0)
+    if (i > 0) {
         m_gps_buf.erase(m_gps_buf.begin(), m_gps_buf.begin() + i);
+    }
 }
 
 /* Airspeed: placeholder for digital pitot (I2C) */
 void SensorManager::ReadAirspeed(SensorData& s) {
     if (!m_cfg.m_i2c) {
-        s.m_airspeed                  = 0.0f;
-        s.m_health.m_airspeed_healthy = false;
+        s.airspeed                = 0.0f;
+        s.health.airspeed_healthy = false;
         return;
     }
-    uint8_t addr = m_cfg.m_airspeed_addr;
+    uint8_t addr = m_cfg.airspeed_addr;
     uint8_t buf[2];
     if (ReadI2CRegister(addr, 0x00, buf, 2)) {
         auto raw = static_cast<int16_t>((buf[0] << 8) | buf[1]);
@@ -385,22 +386,22 @@ void SensorManager::ReadAirspeed(SensorData& s) {
         float       diffPa = static_cast<float>(raw) / 100.0f;
         const float rho    = 1.225f;
         if (diffPa > 0.1f)
-            s.m_airspeed = sqrtf(2.0f * diffPa / rho);
+            s.airspeed = sqrtf(2.0f * diffPa / rho);
         else
-            s.m_airspeed = 0.0f;
-        s.m_health.m_airspeed_healthy = true;
+            s.airspeed = 0.0f;
+        s.health.airspeed_healthy = true;
     }
     else {
-        s.m_airspeed                  = 0.0f;
-        s.m_health.m_airspeed_healthy = false;
+        s.airspeed                = 0.0f;
+        s.health.airspeed_healthy = false;
     }
 }
 
 /* LiDAR: TFmini UART parsing */
 void SensorManager::ReadLidar(SensorData& s) {
     if (!m_cfg.m_lidar_uart) {
-        s.m_range                  = 999.0f;
-        s.m_health.m_lidar_healthy = false;
+        s.range                = 999.0f;
+        s.health.lidar_healthy = false;
         return;
     }
     uint8_t buf[64];
@@ -409,11 +410,11 @@ void SensorManager::ReadLidar(SensorData& s) {
         return;
     for (ssize_t i = 0; i + 8 < n; ++i) {
         if (buf[i] == 0x59 && buf[i + 1] == 0x59) {
-            uint16_t dist              = static_cast<uint16_t>(buf[i + 2]) | (static_cast<uint16_t>(buf[i + 3]) << 8);
-            s.m_range                  = static_cast<float>(dist) / 100.0f; // cm -> m
-            s.m_health.m_lidar_healthy = true;
+            uint16_t dist          = static_cast<uint16_t>(buf[i + 2]) | (static_cast<uint16_t>(buf[i + 3]) << 8);
+            s.range                = static_cast<float>(dist) / 100.0F; // cm -> m
+            s.health.lidar_healthy = true;
             return;
         }
     }
-    s.m_health.m_lidar_healthy = false;
+    s.health.lidar_healthy = false;
 }

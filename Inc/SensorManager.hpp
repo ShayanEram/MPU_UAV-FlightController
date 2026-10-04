@@ -25,7 +25,7 @@ class SensorManager {
         uint8_t m_icm_addr{0x68};
         uint8_t m_ms5611_addr{0x77};
         uint8_t m_hmc_addr{0x1E};
-        uint8_t m_airspeed_addr{0x28}; // example
+        uint8_t airspeed_addr{0x28}; // example
     };
     explicit SensorManager(const Config& cfg);
     ~SensorManager();

@@ -37,15 +37,15 @@ bool RemoteController::ReadOnce(RemoteData& out) {
     }
     else {
         // simulated neutral RC
-        out.m_throttle     = 0.0F;
-        out.m_roll         = 0.0F;
-        out.m_pitch        = 0.0F;
-        out.m_yaw          = 0.0F;
-        out.m_mode_switch  = false;
-        out.m_kill_switch  = false;
-        out.m_is_connected = true;
+        out.throttle     = 0.0F;
+        out.roll         = 0.0F;
+        out.pitch        = 0.0F;
+        out.yaw          = 0.0F;
+        out.mode_switch  = false;
+        out.kill_switch  = false;
+        out.is_connected = true;
     }
-    out.m_timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    out.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     return true;
 }
 
@@ -53,21 +53,21 @@ RemoteData RemoteController::MapChannelsToRemote(const std::vector<float>& chann
     RemoteData r;
     // Expect channels: throttle, aileron, elevator, rudder, switches...
     if (channels.size() >= 4) {
-        r.m_throttle     = channels[0];
-        r.m_roll         = channels[1];
-        r.m_pitch        = channels[2];
-        r.m_yaw          = channels[3];
-        r.m_is_connected = true;
+        r.throttle     = channels[0];
+        r.roll         = channels[1];
+        r.pitch        = channels[2];
+        r.yaw          = channels[3];
+        r.is_connected = true;
     }
     else {
-        r.m_is_connected = false;
+        r.is_connected = false;
     }
     // map additional channels to switches if present
     if (channels.size() >= 5) {
-        r.m_mode_switch = channels[4] > 0.5f;
+        r.mode_switch = channels[4] > 0.5f;
     }
     if (channels.size() >= 6) {
-        r.m_kill_switch = channels[5] > 0.5f;
+        r.kill_switch = channels[5] > 0.5f;
     }
     return r;
 }

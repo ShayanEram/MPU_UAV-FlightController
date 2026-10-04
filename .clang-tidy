@@ -38,8 +38,8 @@ CheckOptions:
   # Variables & Members
   readability-identifier-naming.VariableCase: lower_case
   readability-identifier-naming.ParameterCase: lower_case
-  readability-identifier-naming.MemberCase: lower_case
-  readability-identifier-naming.MemberPrefix: "m_"
+  readability-identifier-naming.PublicMemberCase: lower_case
+  readability-identifier-naming.PublicMemberPrefix: ""
   readability-identifier-naming.PrivateMemberCase: lower_case
   readability-identifier-naming.PrivateMemberPrefix: "m_"
   readability-identifier-naming.ProtectedMemberCase: lower_case

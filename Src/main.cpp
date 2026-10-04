@@ -85,19 +85,19 @@ int main() {
     sensor_mgr->SetSensorCallback([&](const SensorData& s) {
         fc->OnSensorUpdate(s);
         TelemetryPacket p;
-        p.m_sensor = s;
+        p.sensor = s;
         telem->Send(p);
     });
     batt_mgr->SetBatteryCallback([&](const BatteryData& b) {
         fc->OnBatteryUpdate(b);
         TelemetryPacket p;
-        p.m_battery = b;
+        p.battery = b;
         telem->Send(p);
     });
     rc->SetRemoteCallback([&](const RemoteData& r) {
         fc->OnRemoteUpdate(r);
         TelemetryPacket p;
-        p.m_remote = r;
+        p.remote = r;
         telem->Send(p);
     });
 
@@ -106,7 +106,7 @@ int main() {
             motor->SetFailsafe();
         }
         TelemetryPacket p;
-        p.m_motor = m;
+        p.motor = m;
         telem->Send(p);
     });
 

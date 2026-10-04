@@ -31,7 +31,7 @@ bool MotorController::StepMC(const MotorData& out) {
     float dt          = std::chrono::duration<float>(now - m_last_apply_time).count();
     m_last_apply_time = now;
 
-    float desired_throttle = out.m_motor_throttle;
+    float desired_throttle = out.motor_throttle;
     desired_throttle       = std::max(0.0f, std::min(1.0f, desired_throttle));
 
     // If not armed, force throttle to zero
@@ -50,9 +50,9 @@ bool MotorController::StepMC(const MotorData& out) {
 
     // Map to pulses
     uint16_t motor_pulse = ThrottleToPulse(desired_throttle);
-    uint16_t a_pulse     = ServoToPulse(out.m_servo_aileron);
-    uint16_t e_pulse     = ServoToPulse(out.m_servo_elevator);
-    uint16_t r_pulse     = ServoToPulse(out.m_servo_rudder);
+    uint16_t a_pulse     = ServoToPulse(out.servo_aileron);
+    uint16_t e_pulse     = ServoToPulse(out.servo_elevator);
+    uint16_t r_pulse     = ServoToPulse(out.servo_rudder);
 
     // Clamp pulses
     auto clamp = [](uint16_t v, uint16_t lo, uint16_t hi) -> uint16_t {
@@ -94,10 +94,10 @@ bool MotorController::Arm() {
     m_last_throttle = 0.0F;
     // apply zero throttle immediately
     MotorData m;
-    m.m_motor_throttle = 0.0F;
-    m.m_servo_aileron  = 0.0F;
-    m.m_servo_elevator = 0.0F;
-    m.m_servo_rudder   = 0.0F;
+    m.motor_throttle = 0.0F;
+    m.servo_aileron  = 0.0F;
+    m.servo_elevator = 0.0F;
+    m.servo_rudder   = 0.0F;
     StepMC(m);
     spdlog::debug("[MotorController] Armed");
     return true;

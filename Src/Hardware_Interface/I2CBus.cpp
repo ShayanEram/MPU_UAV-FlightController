@@ -18,7 +18,7 @@ bool I2CBus::OpenBus() {
     }
     m_fd = ::open(m_dev.c_str(), O_RDWR);
     if (m_fd < 0) {
-        spdlog::error("[I2CBus] open failed: {}", strerror(errno));
+        spdlog::error("[I2CBus] open failed: {}", ::strerror(errno));
         return false;
     }
     return true;
@@ -35,7 +35,7 @@ bool I2CBus::Read(uint8_t addr, uint8_t reg, uint8_t* buf, size_t len) {
     if (!OpenBus()) {
         return false;
     }
-    if (ioctl(m_fd, I2C_SLAVE, addr) < 0) {
+    if (::ioctl(m_fd, I2C_SLAVE, addr) < 0) {
         spdlog::error("[I2CBus] ioctl set addr failed\n");
         return false;
     }
@@ -53,7 +53,7 @@ bool I2CBus::Write(uint8_t addr, uint8_t reg, const uint8_t* buf, size_t len) {
     if (!OpenBus()) {
         return false;
     }
-    if (ioctl(m_fd, I2C_SLAVE, addr) < 0) {
+    if (::ioctl(m_fd, I2C_SLAVE, addr) < 0) {
         spdlog::error("[I2CBus] ioctl set addr failed\n");
         return false;
     }
