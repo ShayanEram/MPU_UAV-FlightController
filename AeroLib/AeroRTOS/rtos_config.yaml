@@ -1,0 +1,47 @@
+system:
+  major_frame_ns: 20000000  # 20 ms Major Frame (50 Hz base rate)
+  partitions:
+    - name: "SensorAndRcPartition"
+      offset_ns: 0
+      duration_ns: 5000000  # 0 ms -> 5 ms
+      processes:
+        - name: "SensorProcess"
+          entry: "rtos_task_sensor"
+          period_ns: 20000000  # 50 Hz
+          timecap_ns: 2500000
+          priority: 10
+        - name: "RemoteProcess"
+          entry: "rtos_task_remote"
+          period_ns: 20000000  # 50 Hz
+          timecap_ns: 2500000
+          priority: 9
+
+    - name: "FlightControlPartition"
+      offset_ns: 5000000
+      duration_ns: 7000000  # 5 ms -> 12 ms
+      processes:
+        - name: "FlightProcess"
+          entry: "rtos_task_flight"
+          period_ns: 20000000  # 50 Hz
+          timecap_ns: 6000000
+          priority: 10
+
+    - name: "TelemetryPartition"
+      offset_ns: 12000000
+      duration_ns: 5000000  # 12 ms -> 17 ms
+      processes:
+        - name: "TelemetryProcess"
+          entry: "rtos_task_telemetry"
+          period_ns: 200000000  # 5 Hz (200 ms)
+          timecap_ns: 4000000
+          priority: 5
+
+    - name: "BatteryPartition"
+      offset_ns: 17000000
+      duration_ns: 3000000  # 17 ms -> 20 ms
+      processes:
+        - name: "BatteryProcess"
+          entry: "rtos_task_battery"
+          period_ns: 1000000000  # 1 Hz (1000 ms)
+          timecap_ns: 2000000
+          priority: 3
