@@ -51,10 +51,10 @@ class MotorController {
     // set immediate failsafe (force outputs)
     void SetFailsafe();
 
-  private:
     // apply motor/servo outputs (values normalized -1..1 for servos, 0..1 for throttle)
     bool StepMC(const MotorData& out);
 
+  private:
     [[nodiscard]] uint16_t ThrottleToPulse(float t) const;
     [[nodiscard]] uint16_t ServoToPulse(float s) const;
 
