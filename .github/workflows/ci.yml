@@ -1,0 +1,49 @@
+name: C++ CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies & Clang Tools
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -r requirements.txt
+        clang-tools --install 18
+
+    - name: Run Clang-Format Lint Check
+      run: |
+        # Fails the build if code formatting is incorrect.
+        # Adjust 'src/' to match your actual C++ source directory.
+        clang-format --dry-run --Werror src/*.cpp src/*.h
+
+    - name: Conan Profile Detect
+      run: |
+        conan profile detect --force
+
+    - name: Conan Install Packages
+      run: |
+        conan install . --build=missing
+
+    - name: CMake Configure Preset
+      run: |
+        cmake --preset conan-release
+
+    - name: CMake Build Preset
+      run: |
+        cmake --build --preset conan-release

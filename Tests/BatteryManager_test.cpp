@@ -1,21 +1,22 @@
 #include <gtest/gtest.h>
+
 #include "BatteryManager.hpp"
 #include "MessageQueue.hpp"
 
 class TestableBatteryManager : public BatteryManager {
-public:
+  public:
     using BatteryManager::BatteryManager;
     using BatteryManager::getBatteryStatus;
 };
 
 TEST(BatteryManagerTest, GetBatteryStatusLogic) {
     MessageQueue<BatteryData> dummyQueue;
-    TestableBatteryManager manager(dummyQueue);
+    TestableBatteryManager    manager(dummyQueue);
 
     // Test: healthy battery
-    float voltage = 4.0f;
-    float current = 1.0f;
-    float temperature = 25.0f;
+    float voltage       = 4.0f;
+    float current       = 1.0f;
+    float temperature   = 25.0f;
     float remainingLife = 2.0f;
 
     auto status = manager.getBatteryStatus(voltage, current, temperature, remainingLife);

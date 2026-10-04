@@ -1,59 +1,49 @@
+#pragma once
 /**
  * @file RemoteController.hpp
  * @brief Header file for the RemoteController class.
  * Remote control via radio signals, Wi-Fi, or satellite links.
  */
 
-#ifndef REMOTE_CONTROLLER_HPP
-#define REMOTE_CONTROLLER_HPP
-
-#include <thread>
-#include <atomic>
-#include <iostream>
-
-#include <cstring>
-#include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstring>
+#include <memory>
+
+#include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
 class RemoteController {
-public:
-    explicit RemoteController(SharedResource<RemoteData>& _remoteData);
-    ~RemoteController();
-    void start();
-    void stop();
-
-protected:
-    struct Command {
-        float throttle;
-        float yaw;
-        float pitch;
-        float roll;
-        bool releasePayload;
+  public:
+    struct Config {
+        std::shared_ptr<HW::Rc> m_rc_input; // PPM/SBUS adapter
+        uint32_t                m_loop_hz{UPDATE_FREQ};
     };
 
-    void startConnection();
-    void stopConnection();
-    Command processCommand(const std::string& command);
+    enum class ChannelIndex { CHANNEL_1, CHANNEL_2, CHANNEL_3, CHANNEL_4, CHANNEL_5, CHANNEL_6 };
 
-    static constexpr int BUFFER_SIZE = 1024;
-    static constexpr int REMOTE_INTERVAL_CHECK_MS = 10;
+    explicit RemoteController(Config& cfg);
+    ~RemoteController();
 
-    static constexpr const char* SOCKET_PATH = "/tmp/remote_controller_socket";
-    bool _isConnected;
-    int  _serverSocket, _clientSocket;
-    bool _statusToSend;
-    sockaddr_in _serverAddress;
+    explicit RemoteController(const RemoteController& rhs)   = delete;
+    explicit RemoteController(RemoteController&& rhs)        = delete;
+    RemoteController& operator=(const RemoteController& rhs) = delete;
+    RemoteController& operator=(RemoteController&& rhs)      = delete;
 
-private:
-    void runLoop();
-    std::thread moduleThread;
-    std::atomic<bool> running;
+    bool Initialize();
 
-    SharedResource<RemoteData>& _remoteData;
+    void SetRemoteCallback(RemoteCallback cb);
+    bool ReadOnce(RemoteData& out);
+
+    void StepRC();
+
+  private:
+    RemoteData MapChannelsToRemote(const std::vector<float>& channels);
+
+    Config         m_cfg;
+    RemoteCallback m_callback;
+
+    static constexpr auto UPDATE_FREQ = 50;
 };
-
-#endif // REMOTE_CONTROLLER_HPP

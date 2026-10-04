@@ -1,16 +1,17 @@
 #include <gtest/gtest.h>
-#include "TelemetryManager.hpp"
+
 #include "Observer.hpp"
+#include "TelemetryManager.hpp"
 
 class TestableTelemetryManager : public TelemetryManager {
-public:
+  public:
+    using TelemetryManager::_telemetryPacket;
     using TelemetryManager::TelemetryManager;
     using TelemetryManager::updateTelemetryData;
-    using TelemetryManager::_telemetryPacket;
 };
 
 TEST(TelemetryManagerTest, UpdateTelemetryDataSetsPacket) {
-    Observer<SensorData> dummyObserver;
+    Observer<SensorData>     dummyObserver;
     TestableTelemetryManager manager(dummyObserver);
 
     manager.updateTelemetryData();

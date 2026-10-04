@@ -1,65 +1,60 @@
 #include "FlightController.hpp"
 
-FlightController::FlightController(
-    MessageQueue<BatteryData>&  batteryQueue,
-    SharedResource<MotorData>&  motorData,
-    Observer<PayloadData>&      payloadObserver,
-    SharedResource<RemoteData>& remoteData,
-    MessageQueue<SensorData>&   sensorQueue) :
-    _batteryQueue(batteryQueue), 
-    _motorData(motorData),
-    _payloadObserver(payloadObserver), 
-    _remoteData(remoteData),
-    _sensorQueue(sensorQueue), 
-    running(false)
-{
-    _payloadObserver.addListener([this](const PayloadData& payloadData) {
-        this->onPayloadDataUpdated(payloadData);
-    });
-}
+#include <spdlog/spdlog.h>
+
+FlightController::FlightController(Config& cfg) : m_cfg(std::move(cfg)) {}
+
 FlightController::~FlightController() {
-    stop();
+    spdlog::debug("FlightController stopped!");
 }
 //------------------------------------------------------------------------------------
-void FlightController::start() {
-    if (!running.load()) {
-        running.store(true);
-        moduleThread = std::thread(&FlightController::runLoop, this);
-    }
-}
-void FlightController::stop() {
-    if (running.load()) {
-        running.store(false);
-        if (moduleThread.joinable()) {
-            moduleThread.join();
-        }
-    }
+bool FlightController::Initialize() {
+    // initialize internal state
+    m_last_motor = MotorData{};
+    return true;
 }
 //------------------------------------------------------------------------------------
-void FlightController::runLoop() {
-    
-    std::future<BatteryData> batteryData = {}; 
-    std::future<MotorData> motorData = {};
-    std::future<RemoteData> remoteData = {};
-    std::future<SensorData> sensorData = {};
+void FlightController::StepFC() { // Very simple stabilization + throttle mapping example
+    // In real system, use proper PID controllers and sensor fusion (AHRS)
+    MotorData out;
+    // Basic throttle passthrough from RC
+    out.motor_throttle = m_last_remote.throttle;
 
-    while (running.load()) 
-    {
-        batteryData = _batteryQueue.popCommandAsync();
-        motorData = _motorData.getDataAsync();
-        remoteData = _remoteData.getDataAsync();
-        sensorData = _sensorQueue.popCommandAsync();
+    // Simple servo mixing: map roll/pitch commands to servos
+    // Assume remote roll/pitch in -1..1
+    out.servo_aileron  = m_last_remote.roll;
+    out.servo_elevator = m_last_remote.pitch;
+    out.servo_rudder   = m_last_remote.yaw;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(FLIGHT_CONTROLLER_UPDATE_RATE_MS));
+    // Failsafe: if RC disconnected or battery critical, cut throttle
+    if (!m_last_remote.is_connected || m_last_battery.is_critical) {
+        out.motor_throttle = 0.0F;
+    }
 
-        std::cout << "FlightController running" << std::endl;
+    out.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    m_last_motor     = out;
+
+    if (m_motor_cb) {
+        m_motor_cb(out);
     }
 }
 //------------------------------------------------------------------------------------
-void FlightController::onPayloadDataUpdated(const PayloadData& payloadData) 
-{
-    std::cout << "Payload action: " << payloadData.action << std::endl;
-    std::cout << "Payload ID: " << payloadData.payloadId << std::endl;
+void FlightController::OnSensorUpdate(const SensorData& s) {
+    m_last_sensor = s;
+}
 
-    _payloadCallbackData = payloadData;
+void FlightController::OnBatteryUpdate(const BatteryData& b) {
+    m_last_battery = b;
+}
+
+void FlightController::OnRemoteUpdate(const RemoteData& r) {
+    m_last_remote = r;
+}
+
+void FlightController::SetMotorOutputCallback(MotorCallback cb) {
+    m_motor_cb = std::move(cb);
+}
+
+MotorData FlightController::GetMotorData() const {
+    return m_last_motor;
 }

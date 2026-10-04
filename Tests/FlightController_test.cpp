@@ -1,29 +1,28 @@
 #include <gtest/gtest.h>
+
 #include "FlightController.hpp"
 #include "MessageQueue.hpp"
-#include "SharedResource.hpp"
 #include "Observer.hpp"
+#include "SharedResource.hpp"
 
 class TestableFlightController : public FlightController {
-public:
+  public:
+    using FlightController::_payloadCallbackData;
     using FlightController::FlightController;
     using FlightController::onPayloadDataUpdated;
-    using FlightController::_payloadCallbackData;
 };
 
 TEST(FlightControllerTest, OnPayloadDataUpdatedSetsPayload) {
-    MessageQueue<BatteryData> batteryQueue;
-    SharedResource<MotorData> motorData;
-    Observer<PayloadData> payloadObserver;
+    MessageQueue<BatteryData>  batteryQueue;
+    SharedResource<MotorData>  motorData;
+    Observer<PayloadData>      payloadObserver;
     SharedResource<RemoteData> remoteData;
-    MessageQueue<SensorData> sensorQueue;
+    MessageQueue<SensorData>   sensorQueue;
 
-    TestableFlightController controller(
-        batteryQueue, motorData, payloadObserver, remoteData, sensorQueue
-    );
+    TestableFlightController controller(batteryQueue, motorData, payloadObserver, remoteData, sensorQueue);
 
     PayloadData testPayload{};
-    //testPayload.someField = 42; // TBD: Replace with an actual field from PayloadData
+    // testPayload.someField = 42; // TBD: Replace with an actual field from PayloadData
 
     controller.onPayloadDataUpdated(testPayload);
 

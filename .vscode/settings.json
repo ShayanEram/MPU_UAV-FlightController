@@ -1,6 +1,36 @@
 {
-  "cmake.sourceDirectory": "${workspaceFolder}",
-  "cmake.buildDirectory": "${workspaceFolder}/build/Debug",
-  "cmake.configureOnOpen": true,
-  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "[cpp]": {
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true,
+        "editor.indentSize": 4,
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "[confluence]": {
+        "editor.wordWrap": "on"
+    },
+    "cmake.configureArgs": [
+        "-DENABLE_CONVERGAE: BOOL=TRUE"
+    ],
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--background-index",
+        "--query-driver=/usr/bin/c++,/usr/bin/g++",
+        "--header-insertion=never"
+    ],
+    "editor.rulers": [
+        {
+            "column": 130,
+            "color": "#fbff00"
+        }
+    ],
+    "editor.bracketPairColorization.enabled": true,
+
+    "files.trimTrailingWhitespace": true,
+
+    "cmake.configureOnOpen": true,
+
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.cppStandard": "c++23"
 }
