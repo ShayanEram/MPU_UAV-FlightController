@@ -14,6 +14,10 @@ find_package(spdlog REQUIRED)
 find_package(mavlink REQUIRED)
 find_package(pigpio REQUIRED)
 
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/AeroLib/AeroCOM/Lib_AeroCOM)
+add_subdirectory(${CMAKE_SOURCE_DIR}/AeroLib/AeroRTOS/Lib_AeroRTOS)
+
 # --------------------------------------------
 
 set(CMAKE_CXX_STANDARD 23)
@@ -40,6 +44,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     spdlog::spdlog_header_only
     mavlink::mavlink
     pigpio::pigpio
+    rtos
+    com
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC BOOST_ASIO_NO_DEPRECATED)
