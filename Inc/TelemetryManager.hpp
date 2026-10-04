@@ -23,7 +23,7 @@ class TelemetryManagerMavlink {
         uint8_t                   m_target_system{TARGET_SYSTEM};
         uint8_t                   m_target_component{TARGET_COMPONENT};
     };
-    explicit TelemetryManagerMavlink(const Config& cfg);
+    explicit TelemetryManagerMavlink(Config& cfg);
     ~TelemetryManagerMavlink();
 
     explicit TelemetryManagerMavlink(const TelemetryManagerMavlink& rhs)   = delete;
@@ -62,6 +62,10 @@ class TelemetryManagerMavlink {
     static constexpr auto TARGET_COMPONENT = 190;
 };
 
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+
 class MavlinkReceiver {
   public:
     using CommandCallback  = std::function<void(const mavlink_command_long_t&)>;
@@ -74,7 +78,7 @@ class MavlinkReceiver {
         uint8_t                   m_component_id{1};
     };
 
-    explicit MavlinkReceiver(const Config& cfg);
+    explicit MavlinkReceiver(Config& cfg);
     ~MavlinkReceiver();
 
     explicit MavlinkReceiver(const MavlinkReceiver& rhs)   = delete;

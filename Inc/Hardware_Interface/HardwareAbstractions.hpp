@@ -10,6 +10,7 @@ namespace HW {
      */
     class I2C {
       public:
+        I2C()                          = default;
         virtual ~I2C()                 = default;
         explicit I2C(const I2C& rhs)   = delete;
         explicit I2C(I2C&& rhs)        = delete;
@@ -25,6 +26,7 @@ namespace HW {
      */
     class Uart {
       public:
+        Uart()                           = default;
         virtual ~Uart()                  = default;
         explicit Uart(const Uart& rhs)   = delete;
         explicit Uart(Uart&& rhs)        = delete;
@@ -42,6 +44,7 @@ namespace HW {
      */
     class Pwm {
       public:
+        Pwm()                          = default;
         virtual ~Pwm()                 = default;
         explicit Pwm(const Pwm& rhs)   = delete;
         explicit Pwm(Pwm&& rhs)        = delete;
@@ -58,6 +61,7 @@ namespace HW {
      */
     class Adc {
       public:
+        Adc()                          = default;
         virtual ~Adc()                 = default;
         explicit Adc(const Adc& rhs)   = delete;
         explicit Adc(Adc&& rhs)        = delete;
@@ -73,6 +77,7 @@ namespace HW {
      */
     class Rc {
       public:
+        Rc()                         = default;
         virtual ~Rc()                = default;
         explicit Rc(const Rc& rhs)   = delete;
         explicit Rc(Rc&& rhs)        = delete;

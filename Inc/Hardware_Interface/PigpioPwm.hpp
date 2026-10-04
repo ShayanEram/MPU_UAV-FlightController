@@ -8,7 +8,7 @@ namespace HW::IF {
     class PigpioPwm : public Pwm {
       public:
         // channels: vector of GPIO pins for channels 0..N-1
-        explicit PigpioPwm(const std::vector<unsigned>& gpio_pins);
+        explicit PigpioPwm(const std::vector<std::size_t>& gpio_pins);
         ~PigpioPwm() override;
 
         explicit PigpioPwm(const PigpioPwm& rhs)   = delete;

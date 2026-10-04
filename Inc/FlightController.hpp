@@ -17,7 +17,7 @@ class FlightController {
         uint32_t m_loop_hz{REFRESH_RATE_HZ};
     };
 
-    explicit FlightController(const Config& cfg);
+    explicit FlightController(Config& cfg);
     ~FlightController();
 
     explicit FlightController(const FlightController& rhs)   = delete;

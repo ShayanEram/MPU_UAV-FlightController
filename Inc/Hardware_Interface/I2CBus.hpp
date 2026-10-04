@@ -11,7 +11,7 @@
 namespace HW::IF {
     class I2CBus : public I2C {
       public:
-        explicit I2CBus(const std::string& dev = I2C_DEV_PATH);
+        explicit I2CBus(std::string dev = I2C_DEV_PATH);
         ~I2CBus() override;
 
         explicit I2CBus(const I2CBus& rhs)   = delete;

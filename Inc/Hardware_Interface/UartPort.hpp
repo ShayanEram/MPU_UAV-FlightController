@@ -8,7 +8,7 @@
 namespace HW::IF {
     class UartPort : public Uart {
       public:
-        explicit UartPort(const std::string& device);
+        explicit UartPort(std::string device);
         ~UartPort() override;
 
         explicit UartPort(const UartPort& rhs)   = delete;
