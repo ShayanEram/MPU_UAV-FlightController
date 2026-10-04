@@ -11,7 +11,8 @@ find_package(Boost REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(mavlink REQUIRED) # <--- 1. ADD THIS FOR MAVLINK
+find_package(mavlink REQUIRED)
+find_package(pigpio REQUIRED)
 
 # --------------------------------------------
 
@@ -38,6 +39,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     yaml-cpp::yaml-cpp
     spdlog::spdlog_header_only
     mavlink::mavlink
+    pigpio::pigpio
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC BOOST_ASIO_NO_DEPRECATED)

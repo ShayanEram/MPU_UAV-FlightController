@@ -18,7 +18,8 @@ class UAV_FlightController(ConanFile):
         "yaml-cpp/0.8.0",
         "spdlog/1.14.1",
         "gtest/1.15.0",
-        "mavlink/2.0"
+        "mavlink/2.0",
+        "pigpio/1.0"
     ]
 
     default_options = {

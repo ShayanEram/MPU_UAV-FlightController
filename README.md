@@ -44,6 +44,7 @@ To build and run this project, you will need the following:
    clang-tools --install 18
 
    conan profile detect
+   conan create Inc/Hardware_Interface/third_party/conan_pigpio --build=missing
    conan export Inc/Hardware_Interface/third_party
    conan install . --build=missing
    cmake --preset conan-release
