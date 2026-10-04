@@ -28,7 +28,7 @@ void FlightController::StepFC() { // Very simple stabilization + throttle mappin
 
     // Failsafe: if RC disconnected or battery critical, cut throttle
     if (!m_last_remote.is_connected || m_last_battery.is_critical) {
-        out.motor_throttle = 0.0f;
+        out.motor_throttle = 0.0F;
     }
 
     out.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();

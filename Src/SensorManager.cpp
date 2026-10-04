@@ -149,10 +149,10 @@ bool SensorManager::WriteI2CRegister(uint8_t addr, uint8_t reg, const uint8_t* b
 void SensorManager::ReadImu(SensorData& s) {
     // Default simulated values if no I2C
     if (!m_cfg.m_i2c) {
-        s.accel_x = 0.0f;
-        s.accel_y = 0.0f;
-        s.accel_z = -9.80665f;
-        s.gyro_x = s.gyro_y = s.gyro_z = 0.0f;
+        s.accel_x = 0.0F;
+        s.accel_y = 0.0F;
+        s.accel_z = -9.80665F;
+        s.gyro_x = s.gyro_y = s.gyro_z = 0.0F;
         s.health.imu_healthy           = true;
         return;
     }
@@ -181,8 +181,8 @@ void SensorManager::ReadImu(SensorData& s) {
     int16_t gz = toS16(buf[12], buf[13]);
 
     // Convert: assume accel FS = ±2g, gyro FS = ±250 dps
-    const float accelScale = 2.0f / 32768.0f * 9.80665f;          // m/s^2
-    const float gyroScale  = 250.0f / 32768.0f * (M_PI / 180.0f); // rad/s
+    const float accelScale = 2.0F / 32768.0F * 9.80665F;          // m/s^2
+    const float gyroScale  = 250.0F / 32768.0F * (M_PI / 180.0F); // rad/s
 
     s.accel_x = ax * accelScale;
     s.accel_y = ay * accelScale;
@@ -198,9 +198,9 @@ void SensorManager::ReadImu(SensorData& s) {
 /* Barometer: MS5611 */
 void SensorManager::ReadBaro(SensorData& s) {
     if (!m_cfg.m_i2c) {
-        s.pressure            = 1013.25f;
-        s.altitude_baro       = 100.0f;
-        s.temperature         = 20.0f;
+        s.pressure            = 1013.25F;
+        s.altitude_baro       = 100.0F;
+        s.temperature         = 20.0F;
         s.health.baro_healthy = true;
         return;
     }
@@ -251,12 +251,12 @@ void SensorManager::ReadBaro(SensorData& s) {
     int64_t SENS = (static_cast<int64_t>(C[1]) << 15) + ((static_cast<int64_t>(C[3]) * dT) >> 8);
     int64_t P    = (((static_cast<int64_t>(D1) * SENS) >> 21) - OFF) >> 15;
 
-    s.temperature = TEMP / 100.0f;
-    s.pressure    = P / 100.0f; // mbar
+    s.temperature = TEMP / 100.0F;
+    s.pressure    = P / 100.0F; // mbar
 
     // approximate altitude (ISA)
     const float seaLevelPressure = 1013.25f;
-    s.altitude_baro              = 44330.0f * (1.0f - powf(s.pressure / seaLevelPressure, 0.1903f));
+    s.altitude_baro              = 44330.0F * (1.0F - powf(s.pressure / seaLevelPressure, 0.1903f));
 
     s.health.baro_healthy = true;
 }
@@ -264,8 +264,8 @@ void SensorManager::ReadBaro(SensorData& s) {
 /* Compass: HMC5883L */
 void SensorManager::ReadCompass(SensorData& s) {
     if (!m_cfg.m_i2c) {
-        m_mag_x = m_mag_y = m_mag_z = 0.0f;
-        s.heading                   = 0.0f;
+        m_mag_x = m_mag_y = m_mag_z = 0.0F;
+        s.heading                   = 0.0F;
         return;
     }
 
@@ -289,9 +289,9 @@ void SensorManager::ReadCompass(SensorData& s) {
     m_mag_z = static_cast<float>(mz);
 
     // compute heading (simple)
-    float heading = atan2f(m_mag_y, m_mag_x) * 180.0f / M_PI;
+    float heading = atan2f(m_mag_y, m_mag_x) * 180.0F / M_PI;
     if (heading < 0)
-        heading += 360.0f;
+        heading += 360.0F;
     s.heading = heading;
 }
 
@@ -301,8 +301,8 @@ void SensorManager::ReadGps(SensorData& s) {
         // simulated
         s.latitude       = 45.5;
         s.longitude      = -73.6;
-        s.altitude_gps   = 100.0f;
-        s.ground_speed   = 0.0f;
+        s.altitude_gps   = 100.0F;
+        s.ground_speed   = 0.0F;
         s.gps_satellites = 8;
         s.health.gps_fix = true;
         return;
@@ -356,8 +356,8 @@ void SensorManager::ReadGps(SensorData& s) {
                 uint8_t numSV    = payload[23];
                 s.latitude       = lat * 1e-7;
                 s.longitude      = lon * 1e-7;
-                s.altitude_gps   = height / 1000.0f;
-                s.ground_speed   = gSpeed / 1000.0f;
+                s.altitude_gps   = height / 1000.0F;
+                s.ground_speed   = gSpeed / 1000.0F;
                 s.gps_satellites = numSV;
                 s.health.gps_fix = true;
             }
@@ -374,7 +374,7 @@ void SensorManager::ReadGps(SensorData& s) {
 /* Airspeed: placeholder for digital pitot (I2C) */
 void SensorManager::ReadAirspeed(SensorData& s) {
     if (!m_cfg.m_i2c) {
-        s.airspeed                = 0.0f;
+        s.airspeed                = 0.0F;
         s.health.airspeed_healthy = false;
         return;
     }
@@ -383,16 +383,16 @@ void SensorManager::ReadAirspeed(SensorData& s) {
     if (ReadI2CRegister(addr, 0x00, buf, 2)) {
         auto raw = static_cast<int16_t>((buf[0] << 8) | buf[1]);
         // sensor-specific mapping required; here assume raw Pa*100
-        float       diffPa = static_cast<float>(raw) / 100.0f;
-        const float rho    = 1.225f;
-        if (diffPa > 0.1f)
-            s.airspeed = sqrtf(2.0f * diffPa / rho);
+        float       diffPa = static_cast<float>(raw) / 100.0F;
+        const float rho    = 1.225F;
+        if (diffPa > 0.1F)
+            s.airspeed = sqrtf(2.0F * diffPa / rho);
         else
-            s.airspeed = 0.0f;
+            s.airspeed = 0.0F;
         s.health.airspeed_healthy = true;
     }
     else {
-        s.airspeed                = 0.0f;
+        s.airspeed                = 0.0F;
         s.health.airspeed_healthy = false;
     }
 }
@@ -400,7 +400,7 @@ void SensorManager::ReadAirspeed(SensorData& s) {
 /* LiDAR: TFmini UART parsing */
 void SensorManager::ReadLidar(SensorData& s) {
     if (!m_cfg.m_lidar_uart) {
-        s.range                = 999.0f;
+        s.range                = 999.0F;
         s.health.lidar_healthy = false;
         return;
     }

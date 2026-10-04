@@ -114,9 +114,9 @@ void TelemetryManagerMavlink::SendGlobalPosition(const SensorData& s) {
     // GLOBAL_POSITION_INT uses lat/lon in 1e7, alt in mm
     auto     lat          = static_cast<int32_t>(s.latitude * 1e7);
     auto     lon          = static_cast<int32_t>(s.longitude * 1e7);
-    auto     alt          = static_cast<int32_t>(s.altitude_gps * 1000.0f);
-    auto     relative_alt = static_cast<int32_t>(s.altitude_baro * 1000.0f);
-    auto     vx           = static_cast<int16_t>(s.ground_speed * 100.0f); // cm/s -> scaled
+    auto     alt          = static_cast<int32_t>(s.altitude_gps * 1000.0F);
+    auto     relative_alt = static_cast<int32_t>(s.altitude_baro * 1000.0F);
+    auto     vx           = static_cast<int16_t>(s.ground_speed * 100.0F); // cm/s -> scaled
     int16_t  vy           = 0;
     int16_t  vz           = 0;
     uint16_t hdg          = 0;
@@ -134,9 +134,9 @@ void TelemetryManagerMavlink::SendSysStatus(const BatteryData& b) {
     uint32_t onboard_control_sensors_enabled = 0;
     uint32_t onboard_control_sensors_health  = 0;
     uint16_t load                            = 0;
-    auto     voltage_battery                 = static_cast<uint16_t>(b.voltage * 1000.0f);
-    auto     current_battery                 = static_cast<int16_t>(b.current * 1000.0f);
-    int8_t   battery_remaining               = static_cast<int8_t>(std::max(-1.0f, std::min(100.0f, b.remaining_pct)));
+    auto     voltage_battery                 = static_cast<uint16_t>(b.voltage * 1000.0F);
+    auto     current_battery                 = static_cast<int16_t>(b.current * 1000.0F);
+    int8_t   battery_remaining               = static_cast<int8_t>(std::max(-1.0F, std::min(100.0F, b.remaining_pct)));
     mavlink_msg_sys_status_pack(m_cfg.m_system_id, m_cfg.m_component_id, &msg, onboard_control_sensors_present,
                                 onboard_control_sensors_enabled, onboard_control_sensors_health, load, voltage_battery,
                                 current_battery, battery_remaining, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -151,9 +151,9 @@ void TelemetryManagerMavlink::SendBatteryStatus(const BatteryData& b) {
     int32_t                 energy_consumed  = 0;
     int16_t                 temperature      = 0;
     std::array<int16_t, 10> voltages         = {0};
-    voltages.at(0)                           = static_cast<int32_t>(b.voltage * 1000.0f);
-    auto current_battery                     = static_cast<int16_t>(b.current * 1000.0f);
-    auto battery_remaining                   = static_cast<int8_t>(std::max(-1.0f, std::min(100.0f, b.remaining_pct)));
+    voltages.at(0)                           = static_cast<int32_t>(b.voltage * 1000.0F);
+    auto current_battery                     = static_cast<int16_t>(b.current * 1000.0F);
+    auto battery_remaining                   = static_cast<int8_t>(std::max(-1.0F, std::min(100.0F, b.remaining_pct)));
     mavlink_msg_battery_status_pack(m_cfg.m_system_id, m_cfg.m_component_id, &msg, battery_id, 0, energy_consumed, temperature,
                                     reinterpret_cast<const uint16_t*>(voltages.data()), current_battery, current_consumed,
                                     battery_remaining, 0, 0, 0, 0, 0, 0);
@@ -163,10 +163,10 @@ void TelemetryManagerMavlink::SendBatteryStatus(const BatteryData& b) {
 void TelemetryManagerMavlink::SendRcChannels(const RemoteData& r) {
     mavlink_message_t msg;
     // RC_CHANNELS_RAW expects PWM values 0..2000; map normalized -1..1 to 1000..2000
-    auto chan1        = static_cast<uint16_t>(1000 + ((r.throttle * 500.0f) + 500.0F));
-    auto chan2        = static_cast<uint16_t>(1500 + r.roll * 500.0f);
-    auto chan3        = static_cast<uint16_t>(1500 + r.pitch * 500.0f);
-    auto chan4        = static_cast<uint16_t>(1500 + r.yaw * 500.0f);
+    auto chan1        = static_cast<uint16_t>(1000 + ((r.throttle * 500.0F) + 500.0F));
+    auto chan2        = static_cast<uint16_t>(1500 + (r.roll * 500.0F));
+    auto chan3        = static_cast<uint16_t>(1500 + (r.pitch * 500.0F));
+    auto chan4        = static_cast<uint16_t>(1500 + (r.yaw * 500.0F));
     auto time_boot_ms = static_cast<uint32_t>(NowUs() / 1000ULL);
     mavlink_msg_rc_channels_raw_pack(m_cfg.m_system_id, m_cfg.m_component_id, &msg, time_boot_ms, 0, chan1, chan2, chan3, chan4,
                                      0, 0, 0, 0, 0);
@@ -211,7 +211,7 @@ void MavlinkReceiver::StepMR() {
                 }
                 // handle arm/disarm command specially
                 if (cmd.command == MAV_CMD_COMPONENT_ARM_DISARM) {
-                    bool arm = (cmd.param1 > 0.5f);
+                    bool arm = (cmd.param1 > 0.5F);
                     if (m_arm_cb) {
                         m_arm_cb(arm);
                     }

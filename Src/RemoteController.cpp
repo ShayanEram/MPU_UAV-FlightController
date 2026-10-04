@@ -64,10 +64,10 @@ RemoteData RemoteController::MapChannelsToRemote(const std::vector<float>& chann
     }
     // map additional channels to switches if present
     if (channels.size() >= 5) {
-        r.mode_switch = channels[4] > 0.5f;
+        r.mode_switch = channels[4] > 0.5F;
     }
     if (channels.size() >= 6) {
-        r.kill_switch = channels[5] > 0.5f;
+        r.kill_switch = channels[5] > 0.5F;
     }
     return r;
 }

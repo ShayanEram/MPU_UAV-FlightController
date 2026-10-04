@@ -51,7 +51,7 @@ bool PigpioPwm::SetPulseWidth(size_t channel, uint16_t pulse_width_us) {
 
 bool PigpioPwm::SetDutyCycle(size_t channel, float duty) {
     // convert duty 0..1 to pulse 1000..2000
-    float d     = std::max(0.0f, std::min(1.0f, duty));
+    float d     = std::max(0.0F, std::min(1.0F, duty));
     auto  pulse = static_cast<uint16_t>(1000 + d * 1000);
     return SetPulseWidth(channel, pulse);
 }

@@ -32,7 +32,7 @@ bool MotorController::StepMC(const MotorData& out) {
     m_last_apply_time = now;
 
     float desired_throttle = out.motor_throttle;
-    desired_throttle       = std::max(0.0f, std::min(1.0f, desired_throttle));
+    desired_throttle       = std::max(0.0F, std::min(1.0F, desired_throttle));
 
     // If not armed, force throttle to zero
     if (!m_armed.load()) {

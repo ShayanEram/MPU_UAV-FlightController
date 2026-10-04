@@ -68,7 +68,7 @@ bool Ads1115Adc::ReadVoltage(float& volts) {
         return false;
     }
     // PGA ±4.096V => LSB = 125uV
-    float lsb = 4.096f / 32768.0f;
+    float lsb = 4.096F / 32768.0F;
     volts     = raw * lsb;
     return true;
 }
@@ -79,12 +79,12 @@ bool Ads1115Adc::ReadCurrent(float& amps) {
     if (!ReadRawChannel(1, raw)) {
         return false;
     }
-    float lsb     = 4.096f / 32768.0f;
+    float lsb     = 4.096F / 32768.0F;
     float voltage = static_cast<float>(raw) * lsb;
     // Example: shunt amplifier gain and shunt resistor mapping
     // User must calibrate: assume 0.1 ohm shunt and amplifier gain 20 => I = V / (R * G)
-    float shunt_r = 0.1f;
-    float gain    = 20.0f;
+    float shunt_r = 0.1F;
+    float gain    = 20.0F;
     amps          = voltage / (shunt_r * gain);
     return true;
 }

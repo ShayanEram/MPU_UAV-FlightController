@@ -21,7 +21,7 @@ bool UartPort::Open(const char* device, uint32_t baud) {
     }
     m_fd = ::open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (m_fd < 0) {
-        std::cerr << "[UartPort] open failed: " << strerror(errno) << "\n";
+        std::cerr << "[UartPort] open failed: " << ::strerror(errno) << "\n";
         return false;
     }
     termios tty{};

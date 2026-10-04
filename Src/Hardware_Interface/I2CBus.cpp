@@ -54,13 +54,16 @@ bool I2CBus::Write(uint8_t addr, uint8_t reg, const uint8_t* buf, size_t len) {
         return false;
     }
     if (::ioctl(m_fd, I2C_SLAVE, addr) < 0) {
-        spdlog::error("[I2CBus] ioctl set addr failed\n");
+        spdlog::error("[I2CBus] ioctl set addr failed");
         return false;
     }
-    std::vector<uint8_t> out;
-    out.reserve(len + 1);
-    out.push_back(reg);
-    out.insert(out.end(), buf, buf + len);
+
+    std::vector<uint8_t> out(len + 1);
+    out[0] = reg;
+    if (buf != nullptr && len > 0) {
+        std::memcpy(out.data() + 1, buf, len);
+    }
+
     ssize_t w = ::write(m_fd, out.data(), out.size());
     return w == static_cast<ssize_t>(out.size());
 }

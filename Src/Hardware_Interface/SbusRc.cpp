@@ -43,7 +43,7 @@ bool SbusRc::ParseSbusFrame(const uint8_t* buf, size_t len, std::vector<int>& ou
 bool SbusRc::ReadChannels(std::vector<float>& channels) {
     if (!m_uart) {
         // simulated neutral channels
-        channels.assign(8, 0.0f);
+        channels.assign(8, 0.0F);
         return true;
     }
     std::array<uint8_t, 64> buf{};
@@ -59,7 +59,7 @@ bool SbusRc::ReadChannels(std::vector<float>& channels) {
                 channels.clear();
                 for (const auto& raw_val : raw) {
                     // SBUS raw 0..2047 -> map to -1..1
-                    float v = (static_cast<float>(raw_val) - 1024.0f) / 1024.0f;
+                    float v = (static_cast<float>(raw_val) - 1024.0F) / 1024.0F;
                     channels.push_back(v);
                 }
                 return true;
