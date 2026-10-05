@@ -1,8 +1,8 @@
 # UAV Flight Controller
 
-This project implements the software for an **Unmanned Aerial Vehicle (UAV)**, focusing on modularity, thread-safe communication, and real-time control. The system is designed to manage various components such as the flight controller, payload manager, sensor manager, and telemetry systems.
+This project implements the software for an **Unmanned Aerial Vehicle (UAV)**, focusing on modularity, thread-safe communication, and real-time control. The system is designed to manage various components such as the flight controller, payload manager, sensor manager, and telemetry systems, running on a custom ARINC-653 RTOS library.
 
-This project is a recipe (`uav.bb`) for the [UAV-Yocto](https://github.com/ShayanEram/MPU_UAV-Yocto) project.
+This project is a recipe (`uav.bb`) for the [UAV-Yocto](https://github.com/ShayanEram/MPU_UAV-Yocto) project to run on a microporcessor (will start running when the board is powered on by default).
 
 ---
 
@@ -19,18 +19,14 @@ To build and run this project, you will need the following:
 
 ## **Installation and Setup**
 
-1. Clone the repository:
+1. Clone the repository with the submodules:
    ```sh
    git clone --recursive <repo-url>
-   cd MPU_Unmanned-Aerial-Vehicle
    ```
 
-2. Install the required dependencies (if any). Ensure that CMake and a compatible compiler are installed on your system.
+2. Install the required dependencies. Ensure that CMake and a compatible compiler are installed on your system.
 
-3. Configure the project using CMake:
-   ```sh
-   cmake -S . -B build
-   ```
+3. Configure the project using CMake
 
 ---
 
@@ -58,69 +54,26 @@ When you run the application, the following components will be initialized and e
 
 1. **Flight Controller**:
    - Periodically retrieves data from the battery, motor, remote controller, and sensors using asynchronous mechanisms.
-   - Logs the status of the UAV to the console.
 
-2. **Payload Manager**:
-   - Manages payload operations and notifies the flight controller of updates using the `Observer<PayloadData>` mechanism.
-   - Logs payload actions and IDs when updates occur.
-
-3. **Sensor Manager**:
+2. **Sensor Manager**:
    - Collects and processes data from onboard sensors.
-   - Publishes sensor data to a `MessageQueue<SensorData>` for other modules to consume.
 
-4. **Telemetry System**:
-   - Sends telemetry data to external systems for monitoring and analysis.
+3. **Telemetry Manager**:
+   - Sends telemetry data to external systems for monitoring and analysis using MAVLINK.
 
-### **Example Output**
-When the application is running, you can expect logs similar to the following:
+4. **Battery Manager**:
+   - Collects and processes data from and for the ESC battery board.
 
-```plaintext
-FlightController running
-Payload action: Drop
-Payload ID: 42
-FlightController running
-```
+5. **Remote controller**:
+   - Sends and receive data to using SBUS.
+
+6. **Motor controller**:
+   - Controls actuators (servos) and the pusher motor (propellers).
 
 ---
 
-## **Project Structure**
+## **NOTE**
 
-```
-build/
-    x64-debug/
-CMakeLists.txt
-CMakePresets.json
-Inc/
-    BatteryManager.hpp
-    FlightController.hpp
-    InterData.hpp
-    main.hpp
-    MessageQueue.hpp
-    MotorController.hpp
-    Observer.hpp
-    PayloadManager.hpp
-    RemoteController.hpp
-    SensorManager.hpp
-    SharedResource.hpp
-    TelemetryManager.hpp
-    ThreadManager.hpp
-README.md
-Src/
-    BatteryManager.cpp
-    FlightController.cpp
-    main.cpp
-    MotorController.cpp
-    PayloadManager.cpp
-    RemoteController.cpp
-    SensorManager.cpp
-    ...
-```
+- This project also includes libraries for A429, A664 and MILSTD-1553B for future upgrades (if needed).
 
-### **Key Components**
-- **Flight Controller**: Manages UAV operations, including motor control, battery monitoring, and remote commands.
-- **Payload Manager**: Handles payload operations and communicates updates to the flight controller.
-- **Sensor Manager**: Collects and processes sensor data for use by other modules.
-- **Shared Resources and Communication**:
-  - `SharedResource`: Provides thread-safe access to shared data.
-  - `MessageQueue`: Implements a thread-safe queue for inter-thread communication.
-  - `Observer`: Implements the observer pattern for event-driven communication between modules.
+- The ARINC-653 RTOS library configuration (yaml) file needs to be udpated if more modules are needed to be added to the execution.(rtos_config.yaml).
