@@ -25,9 +25,6 @@ void BatteryManager::StepBM() {
     send_queuing_message(&m_batt_port, &b, sizeof(BatteryData), timeout_ns);
 }
 //------------------------------------------------------------------------------------
-void BatteryManager::SetBatteryCallback(BatteryCallback cb) {
-    m_callback = std::move(cb);
-}
 bool BatteryManager::ReadOnce(BatteryData& out) {
     if (m_cfg.m_adc) {
         float v = 0.0F;

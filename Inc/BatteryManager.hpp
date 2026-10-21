@@ -28,7 +28,6 @@ class BatteryManager {
     BatteryManager& operator=(BatteryManager&& rhs)      = delete;
 
     bool Initialize();
-    void SetBatteryCallback(BatteryCallback cb);
     bool ReadOnce(BatteryData& out);
 
     void StepBM();

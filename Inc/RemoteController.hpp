@@ -34,10 +34,7 @@ class RemoteController {
     RemoteController& operator=(RemoteController&& rhs)      = delete;
 
     bool Initialize();
-
-    void SetRemoteCallback(RemoteCallback cb);
     bool ReadOnce(RemoteData& out);
-
     void StepRC();
 
   private:

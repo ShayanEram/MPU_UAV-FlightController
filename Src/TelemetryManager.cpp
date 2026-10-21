@@ -189,7 +189,7 @@ void MavlinkReceiver::StepMR() {
                 mavlink_command_long_t cmd;
                 mavlink_msg_command_long_decode(&msg, &cmd);
 
-                // Package into our aeroRTOS command structure
+                // Package into aeroRTOS command structure
                 CommandMessage cMsg;
                 cMsg.command_id = cmd.command;
                 cMsg.param1     = cmd.param1;
@@ -198,7 +198,7 @@ void MavlinkReceiver::StepMR() {
                 cMsg.timestamp_ms =
                     duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-                // Send deterministically via APEX queuing port[cite: 13]
+                // Send deterministically via APEX queuing port
                 SYSTEM_TIME_NS timeout_ns = 1000000ULL;
                 send_queuing_message(&m_cmd_tx_port, &cMsg, sizeof(CommandMessage), timeout_ns);
                 break;
@@ -208,14 +208,4 @@ void MavlinkReceiver::StepMR() {
             }
         }
     }
-}
-//------------------------------------------------------------------------------------
-void MavlinkReceiver::SetCommandCallback(CommandCallback cb) {
-    m_cmd_cb = std::move(cb);
-}
-void MavlinkReceiver::SetArmCallback(ArmCallback cb) {
-    m_arm_cb = std::move(cb);
-}
-void MavlinkReceiver::SetParamSetCallback(ParamSetCallback cb) {
-    m_param_cb = std::move(cb);
 }

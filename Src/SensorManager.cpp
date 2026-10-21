@@ -90,11 +90,6 @@ void SensorManager::StepSm() {
     send_queuing_message(&m_sensor_port, &s, sizeof(SensorData), timeout_ns);
 }
 //------------------------------------------------------------------------------------
-void SensorManager::SetSensorCallback(SensorCallback cb) {
-    std::scoped_lock lk(m_cb_mutex);
-    m_callback = std::move(cb);
-}
-
 bool SensorManager::ReadOnce(SensorData& out) {
     ReadImu(out);
     ReadBaro(out);

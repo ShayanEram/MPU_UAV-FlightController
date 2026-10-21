@@ -25,10 +25,6 @@ void RemoteController::StepRC() {
     }
 }
 //------------------------------------------------------------------------------------
-void RemoteController::SetRemoteCallback(RemoteCallback cb) {
-    m_callback = std::move(cb);
-}
-
 bool RemoteController::ReadOnce(RemoteData& out) {
     if (m_cfg.m_rc_input) {
         std::vector<float> channels;
