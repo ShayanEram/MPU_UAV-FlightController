@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "Apex.hpp"
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "Hardware_Interface/MadgwickAHRS.hpp"
 #include "InterData.hpp"
@@ -37,9 +38,6 @@ class SensorManager {
 
     bool Initialize();
 
-    // Register callback to receive fused SensorData
-    void SetSensorCallback(SensorCallback cb);
-
     // Single-shot synchronous read
     bool ReadOnce(SensorData& out);
 
@@ -58,9 +56,8 @@ class SensorManager {
     bool ReadI2CRegister(uint8_t addr, uint8_t reg, uint8_t* buf, size_t len);
     bool WriteI2CRegister(uint8_t addr, uint8_t reg, const uint8_t* buf, size_t len);
 
-    Config         m_cfg;
-    SensorCallback m_callback;
-    std::mutex     m_cb_mutex;
+    Config      m_cfg;
+    QueuingPort m_sensor_port;
 
     // AHRS
     HW::IF::MadgwickAHRS                  m_ahrs;

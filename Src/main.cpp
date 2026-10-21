@@ -72,13 +72,13 @@ int main() {
     // 4. HARDWARE ADAPTERS
     // ---------------------------------------------------------
     // I2c
-    auto i2c            = std::make_shared<I2CBus>("/dev/i2c-1");
+    auto i2c = std::make_shared<I2CBus>("/dev/i2c-1");
 
     // Uart_tel
     auto telemetry_uart = std::make_shared<UartPort>("/dev/serial0");
     telemetry_uart->Open("/dev/serial0", 38400);
 
-    //Uart_lid
+    // Uart_lid
     auto lidar_uart = std::make_shared<UartPort>("/dev/ttyS1");
     lidar_uart->Open("/dev/ttyS1", 115200);
 
@@ -141,37 +141,7 @@ int main() {
     fc->Initialize();
 
     // ---------------------------------------------------------
-    // 6. WIRE CALLBACKS (USE APEX TODO)
-    // ---------------------------------------------------------
-    sensor_mgr->SetSensorCallback([&](const SensorData& s) {
-        fc->OnSensorUpdate(s);
-        TelemetryPacket p;
-        p.sensor = s;
-        telem->Send(p);
-    });
-    batt_mgr->SetBatteryCallback([&](const BatteryData& b) {
-        fc->OnBatteryUpdate(b);
-        TelemetryPacket p;
-        p.battery = b;
-        telem->Send(p);
-    });
-    rc->SetRemoteCallback([&](const RemoteData& r) {
-        fc->OnRemoteUpdate(r);
-        TelemetryPacket p;
-        p.remote = r;
-        telem->Send(p);
-    });
-    fc->SetMotorOutputCallback([&](const MotorData& m) {
-        if (!motor->StepMC(m)) {
-            motor->SetFailsafe();
-        }
-        TelemetryPacket p;
-        p.motor = m;
-        telem->Send(p);
-    });
-
-    // ---------------------------------------------------------
-    // 7. MAP OBJECTS TO RTOS BRIDGE & RUN
+    // 6. MAP OBJECTS TO RTOS BRIDGE & RUN
     // ---------------------------------------------------------
     g_sensor_mgr = sensor_mgr.get();
     g_batt_mgr   = batt_mgr.get();

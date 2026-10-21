@@ -90,9 +90,10 @@ struct TelemetryPacket {
     uint64_t    timestamp_ms{0};
 };
 
-// Callback types
-using SensorCallback    = std::function<void(const SensorData&)>;
-using BatteryCallback   = std::function<void(const BatteryData&)>;
-using RemoteCallback    = std::function<void(const RemoteData&)>;
-using MotorCallback     = std::function<void(const MotorData&)>;
-using TelemetryCallback = std::function<void(const TelemetryPacket&)>;
+struct CommandMessage {
+    uint16_t command_id; // e.g., MAV_CMD_COMPONENT_ARM_DISARM
+    float    param1;
+    float    param2;
+    bool     is_valid{false};
+    uint64_t timestamp_ms{0};
+};

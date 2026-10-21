@@ -11,16 +11,18 @@ bool RemoteController::Initialize() {
     if (!m_cfg.m_rc_input) {
         spdlog::debug("[RemoteController] Warning: no RC adapter injected; using simulated RC");
     }
-    return true;
+    RETURN_CODE_TYPE status = create_queuing_port(&m_remote_port, "RemoteDataQueue", sizeof(RemoteData), 10, DIR_SOURCE);
+    return (status == RC_OK);
 }
 //------------------------------------------------------------------------------------
 void RemoteController::StepRC() {
     const auto period = std::chrono::milliseconds(1000 / std::max<uint32_t>(1, m_cfg.m_loop_hz));
     RemoteData r;
-    if (ReadOnce(r) && m_callback) {
-        m_callback(r);
+
+    if (ReadOnce(r)) {
+        SYSTEM_TIME_NS timeout_ns = 1000000ULL;
+        send_queuing_message(&m_remote_port, &r, sizeof(RemoteData), timeout_ns);
     }
-    std::this_thread::sleep_for(period);
 }
 //------------------------------------------------------------------------------------
 void RemoteController::SetRemoteCallback(RemoteCallback cb) {

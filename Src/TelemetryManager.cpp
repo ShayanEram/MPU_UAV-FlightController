@@ -35,58 +35,38 @@ bool TelemetryManagerMavlink::Initialize() {
         spdlog::error("[TelemetryMavlink] telemetry UART not provided");
         return false;
     }
-    return true;
+    RETURN_CODE_TYPE s1 = create_queuing_port(&m_sensor_rx_port, "SensorDataQueue", sizeof(SensorData), 10, DIR_DESTINATION);
+    RETURN_CODE_TYPE s2 = create_queuing_port(&m_batt_rx_port, "BatteryDataQueue", sizeof(BatteryData), 10, DIR_DESTINATION);
+    RETURN_CODE_TYPE s3 = create_queuing_port(&m_remote_rx_port, "RemoteDataQueue", sizeof(RemoteData), 10, DIR_DESTINATION);
+    RETURN_CODE_TYPE s4 = create_queuing_port(&m_motor_rx_port, "MotorDataQueue", sizeof(MotorData), 10, DIR_DESTINATION);
+    return (s1 == RC_OK && s2 == RC_OK && s3 == RC_OK && s4 == RC_OK);
 }
 //------------------------------------------------------------------------------------
 void TelemetryManagerMavlink::StepTM() {
-    const auto period         = std::chrono::milliseconds(1000 / std::max<uint32_t>(1, m_cfg.m_send_hz));
-    auto       last_heartbeat = std::chrono::steady_clock::now();
-    // periodic heartbeat at 1 Hz
-    if (std::chrono::steady_clock::now() - last_heartbeat >= std::chrono::seconds(1)) {
-        SendHeartbeat();
-        last_heartbeat = std::chrono::steady_clock::now();
+    const auto     period     = std::chrono::milliseconds(1000 / std::max<uint32_t>(1, m_cfg.m_send_hz));
+    SYSTEM_TIME_NS timeout_ns = 2000000ULL;
+    size_t         len        = 0;
+
+    SendHeartbeat();
+
+    SensorData s;
+    if (receive_queuing_message(&m_sensor_rx_port, &s, &len, timeout_ns) == RC_OK) {
+        SendAttitude(s);
+        SendGlobalPosition(s);
     }
 
-    // drain one queued telemetry packet per loop iteration
-    QueueItem item;
-    {
-        std::scoped_lock lk(m_qmut);
-        if (!m_queue.empty()) {
-            item = m_queue.front();
-            m_queue.pop_front();
-        }
-        else {
-            // no queued packet: send periodic status (optional)
-            // we still sleep and continue
-            std::this_thread::sleep_for(period);
-        }
+    BatteryData b;
+    if (receive_queuing_message(&m_batt_rx_port, &b, &len, timeout_ns) == RC_OK) {
+        SendSysStatus(b);
+        SendBatteryStatus(b);
     }
 
-    // send fused attitude
-    SendAttitude(item.m_pkt.sensor);
-
-    // send global position
-    SendGlobalPosition(item.m_pkt.sensor);
-
-    // send battery and sys status
-    SendSysStatus(item.m_pkt.battery);
-    SendBatteryStatus(item.m_pkt.battery);
-
-    // send RC channels if present
-    SendRcChannels(item.m_pkt.remote);
-
-    std::this_thread::sleep_for(period);
+    RemoteData r;
+    if (receive_queuing_message(&m_remote_rx_port, &r, &len, timeout_ns) == RC_OK) {
+        SendRcChannels(r);
+    }
 }
 //------------------------------------------------------------------------------------
-void TelemetryManagerMavlink::Send(const TelemetryPacket& m_pkt) {
-    std::scoped_lock lk(m_qmut);
-    m_queue.push_back({m_pkt});
-    // keep queue bounded
-    if (m_queue.size() > 200) {
-        m_queue.pop_front();
-    }
-}
-
 void TelemetryManagerMavlink::SendHeartbeat() {
     mavlink_message_t msg;
     mavlink_msg_heartbeat_pack(m_cfg.m_system_id, m_cfg.m_component_id, &msg, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_GENERIC, 0, 0,
@@ -188,50 +168,42 @@ bool MavlinkReceiver::Initialize() {
         spdlog::error("[MavlinkReceiver] No UART provided");
         return false;
     }
-    return true;
+    RETURN_CODE_TYPE status = create_queuing_port(&m_cmd_tx_port, "CommandDataQueue", sizeof(CommandMessage), 10, DIR_SOURCE);
+    return (status == RC_OK);
 }
 //------------------------------------------------------------------------------------
 void MavlinkReceiver::StepMR() {
     std::array<uint8_t, 256> buf{};
     mavlink_message_t        msg;
     mavlink_status_t         status;
-    ssize_t                  n = m_cfg.m_uart->Read(buf.data(), sizeof(buf), 100);
+
+    ssize_t n = m_cfg.m_uart->Read(buf.data(), sizeof(buf), 10);
     if (n <= 0) {
-        spdlog::warn("Not enough data!");
+        return; // No data received this cycle
     }
+
     for (ssize_t i = 0; i < n; ++i) {
         if (static_cast<bool>(mavlink_parse_char(MAVLINK_COMM_0, buf.at(i), &msg, &status))) {
-            // handle message
             switch (msg.msgid) {
             case MAVLINK_MSG_ID_COMMAND_LONG: {
                 mavlink_command_long_t cmd;
                 mavlink_msg_command_long_decode(&msg, &cmd);
-                if (m_cmd_cb) {
-                    m_cmd_cb(cmd);
-                }
-                // handle arm/disarm command specially
-                if (cmd.command == MAV_CMD_COMPONENT_ARM_DISARM) {
-                    bool arm = (cmd.param1 > 0.5F);
-                    if (m_arm_cb) {
-                        m_arm_cb(arm);
-                    }
-                }
-                break;
-            }
-            case MAVLINK_MSG_ID_PARAM_SET: {
-                mavlink_param_set_t p;
-                mavlink_msg_param_set_decode(&msg, &p);
-                if (m_param_cb) {
-                    m_param_cb(p);
-                }
-                break;
-            }
-            case MAVLINK_MSG_ID_HEARTBEAT: {
-                // optional: handle GCS heartbeat if needed
+
+                // Package into our aeroRTOS command structure
+                CommandMessage cMsg;
+                cMsg.command_id = cmd.command;
+                cMsg.param1     = cmd.param1;
+                cMsg.param2     = cmd.param2;
+                cMsg.is_valid   = true;
+                cMsg.timestamp_ms =
+                    duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+                // Send deterministically via APEX queuing port[cite: 13]
+                SYSTEM_TIME_NS timeout_ns = 1000000ULL;
+                send_queuing_message(&m_cmd_tx_port, &cMsg, sizeof(CommandMessage), timeout_ns);
                 break;
             }
             default:
-                // other messages can be handled by registered callbacks via COMMAND_LONG
                 break;
             }
         }

@@ -12,17 +12,17 @@ bool BatteryManager::Initialize() {
     if (!m_cfg.m_adc) {
         spdlog::debug("[BatteryManager] Warning: no ADC adapter injected; using simulated battery");
     }
-    return true;
+    RETURN_CODE_TYPE status = create_queuing_port(&m_batt_port, "BatteryDataQueue", sizeof(BatteryData), 10, DIR_SOURCE);
+    return (status == RC_OK);
 }
 //------------------------------------------------------------------------------------
 void BatteryManager::StepBM() {
     const auto  period = std::chrono::milliseconds(1000 / std::max<uint32_t>(1, m_cfg.m_loop_hz));
     BatteryData b;
     ReadOnce(b);
-    if (m_callback) {
-        m_callback(b);
-    }
-    std::this_thread::sleep_for(period);
+
+    SYSTEM_TIME_NS timeout_ns = 1000000ULL;
+    send_queuing_message(&m_batt_port, &b, sizeof(BatteryData), timeout_ns);
 }
 //------------------------------------------------------------------------------------
 void BatteryManager::SetBatteryCallback(BatteryCallback cb) {

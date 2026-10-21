@@ -6,6 +6,7 @@
  */
 #include <memory>
 
+#include "Apex.hpp"
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
@@ -33,8 +34,7 @@ class BatteryManager {
     void StepBM();
 
   private:
-    Config          m_cfg;
-    BatteryCallback m_callback;
+    QueuingPort m_batt_port;
 
     static constexpr auto LOW_THRESH_PCT    = 20.0F;
     static constexpr auto CRITIC_THRESH_PCT = 10.0F;

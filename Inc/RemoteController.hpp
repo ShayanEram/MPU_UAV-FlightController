@@ -12,6 +12,7 @@
 #include <cstring>
 #include <memory>
 
+#include "Apex.hpp"
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
@@ -42,8 +43,8 @@ class RemoteController {
   private:
     RemoteData MapChannelsToRemote(const std::vector<float>& channels);
 
-    Config         m_cfg;
-    RemoteCallback m_callback;
+    Config      m_cfg;
+    QueuingPort m_remote_port;
 
     static constexpr auto UPDATE_FREQ = 50;
 };

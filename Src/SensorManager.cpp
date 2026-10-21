@@ -50,7 +50,10 @@ bool SensorManager::Initialize() {
         m_cfg.m_lidar_uart->Open("/dev/ttyS1", LIDAR_BAUD_RATE);
     }
     m_last_ahrs_time = std::chrono::steady_clock::now();
-    return true;
+
+    RETURN_CODE_TYPE status = create_queuing_port(&m_sensor_port, "SensorDataQueue", sizeof(SensorData), 10, DIR_SOURCE);
+
+    return (status == RC_OK);
 }
 //------------------------------------------------------------------------------------
 void SensorManager::StepSm() {
@@ -83,15 +86,8 @@ void SensorManager::StepSm() {
 
     s.timestamp_ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    // callback
-    {
-        std::scoped_lock lk(m_cb_mutex);
-        if (m_callback) {
-            m_callback(s);
-        }
-    }
-
-    std::this_thread::sleep_for(period);
+    SYSTEM_TIME_NS timeout_ns = 1000000ULL; // 1ms timeout
+    send_queuing_message(&m_sensor_port, &s, sizeof(SensorData), timeout_ns);
 }
 //------------------------------------------------------------------------------------
 void SensorManager::SetSensorCallback(SensorCallback cb) {

@@ -10,6 +10,7 @@
 #include <deque>
 #include <memory>
 
+#include "Apex.hpp"
 #include "Hardware_Interface/HardwareAbstractions.hpp"
 #include "InterData.hpp"
 
@@ -48,12 +49,10 @@ class TelemetryManagerMavlink {
 
     Config m_cfg;
 
-    // internal queue
-    struct QueueItem {
-        TelemetryPacket m_pkt;
-    };
-    std::mutex            m_qmut;
-    std::deque<QueueItem> m_queue;
+    QueuingPort m_sensor_rx_port;
+    QueuingPort m_batt_rx_port;
+    QueuingPort m_remote_rx_port;
+    QueuingPort m_motor_rx_port;
 
     uint8_t m_seq_counter{0};
 
@@ -68,10 +67,6 @@ class TelemetryManagerMavlink {
 
 class MavlinkReceiver {
   public:
-    using CommandCallback  = std::function<void(const mavlink_command_long_t&)>;
-    using ArmCallback      = std::function<void(bool arm)>; // true=arm, false=disarm
-    using ParamSetCallback = std::function<void(const mavlink_param_set_t&)>;
-
     struct Config {
         std::shared_ptr<HW::Uart> m_uart;
         uint8_t                   m_system_id{1};
@@ -87,16 +82,9 @@ class MavlinkReceiver {
     MavlinkReceiver& operator=(MavlinkReceiver&& rhs)      = delete;
 
     bool Initialize();
-
-    void SetCommandCallback(CommandCallback cb);
-    void SetArmCallback(ArmCallback cb);
-    void SetParamSetCallback(ParamSetCallback cb);
+    void StepMR(); // Periodic task that reads UART and pushes commands to queue
 
   private:
-    void   StepMR();
-    Config m_cfg;
-
-    CommandCallback  m_cmd_cb;
-    ArmCallback      m_arm_cb;
-    ParamSetCallback m_param_cb;
+    Config      m_cfg;
+    QueuingPort m_cmd_tx_port; // APEX Source Port for outgoing GCS commands
 };

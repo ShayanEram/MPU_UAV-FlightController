@@ -5,6 +5,7 @@
  * The brain of the aircraft, responsible for stabilization, navigation, and autonomous flight.
  */
 
+#include "Apex.hpp"
 #include "InterData.hpp"
 
 class FlightController {
@@ -27,14 +28,6 @@ class FlightController {
 
     bool Initialize();
 
-    // input sources (called by higher-level orchestrator or callbacks)
-    void OnSensorUpdate(const SensorData& s);
-    void OnBatteryUpdate(const BatteryData& b);
-    void OnRemoteUpdate(const RemoteData& r);
-
-    // output sink (set by orchestrator)
-    void SetMotorOutputCallback(MotorCallback cb);
-
     // request current motor outputs
     [[nodiscard]] MotorData GetMotorData() const;
 
@@ -43,13 +36,24 @@ class FlightController {
   private:
     Config m_cfg;
 
+    QueuingPort m_sensor_rx_port;
+    QueuingPort m_battery_rx_port;
+    QueuingPort m_remote_rx_port;
+    QueuingPort m_motor_tx_port;
+
     // internal state
     SensorData  m_last_sensor;
     BatteryData m_last_battery;
     RemoteData  m_last_remote;
     MotorData   m_last_motor;
 
-    MotorCallback m_motor_cb;
+    // PID Integral Error Accumulators (Anti-windup)
+    float m_integral_roll{0.0F};
+    float m_integral_pitch{0.0F};
+    float m_integral_yaw{0.0F};
+
+    // Timing tracking for dt calculation
+    std::chrono::steady_clock::time_point m_last_loop_time;
 
     static constexpr auto REFRESH_RATE_HZ = 200;
 };
